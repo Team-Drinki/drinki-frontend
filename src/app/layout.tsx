@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { Inter } from 'next/font/google';
 import ReactQueryProvider from '@/lib/react-query-provider';
 import { Header } from '@/components/header/header';
+import Footer from '@/components/footer';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -18,6 +19,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ReactQueryProvider>
           <Header />
           <main>{children}</main>
+          <Footer />
         </ReactQueryProvider>
       </body>
     </html>
