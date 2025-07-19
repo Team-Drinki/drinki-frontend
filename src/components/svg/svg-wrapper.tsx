@@ -42,6 +42,7 @@ export default function SvgWrapper({
       height={size}
       fill={color}
       viewBox={viewBox}
+      preserveAspectRatio="xMidYMid meet"
       xmlns="http://www.w3.org/2000/svg"
       className={cn('inline-block', className)}
       {...props}
