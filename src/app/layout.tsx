@@ -2,6 +2,7 @@ import './globals.css';
 import { ReactNode } from 'react';
 import { Inter } from 'next/font/google';
 import ReactQueryProvider from '@/lib/react-query-provider';
+import { Header } from '@/components/Header';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -14,7 +15,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body className={inter.className}>
-        <ReactQueryProvider>{children}</ReactQueryProvider>
+        <ReactQueryProvider>
+          <Header />
+          <main>{children}</main>
+        </ReactQueryProvider>
       </body>
     </html>
   );
