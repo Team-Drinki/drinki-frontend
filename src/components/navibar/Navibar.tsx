@@ -3,11 +3,11 @@
 import Link from 'next/link';
 import MypageIcon from '../svg/mypage-icon';
 import { Button } from '../ui/button';
-import { DrinkDropdownContent } from './DropDownMenu';
 import { drinkCategories } from './const';
 import { cn } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { DrinkDropdownContent } from '@/components/navibar/DropDownMenu';
 
 export function Navibar() {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
