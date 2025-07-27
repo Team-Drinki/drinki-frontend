@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import MypageIcon from '../svg/mypage-icon';
 import { Button } from '../ui/button';
 import { drinkCategories } from './const';
 import { cn } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { DrinkDropdownContent } from '@/components/navibar/DropDownMenu';
+import MypageIcon from '../svg/MypageIcon';
 
 export function Navibar() {
   const [isDropdownOpen, setDropdownOpen] = useState(false);

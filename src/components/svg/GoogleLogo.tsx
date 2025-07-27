@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 export default function GoogleLogo({ className = '' }: { className?: string }) {
   return (
     <SvgWrapper className={cn('size-5', className)}>
-      <g clip-path="url(#clip0_3900_934)">
+      <g clipPath="url(#clip0_3900_934)">
         <path
           d="M23.7663 12.2763C23.7663 11.4605 23.7001 10.6404 23.559 9.83789H12.2402V14.4589H18.722C18.453 15.9492 17.5888 17.2676 16.3233 18.1054V21.1037H20.1903C22.4611 19.0137 23.7663 15.9272 23.7663 12.2763Z"
           fill="#4285F4"
