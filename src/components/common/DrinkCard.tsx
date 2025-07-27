@@ -2,9 +2,9 @@
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
-import Eye from '../svg/eye';
 import Message from '../svg/message';
 import Heart from '../svg/heart';
+import Eye from '../svg/eye';
 
 interface DrinkCardProps {
   title: string;

@@ -1,5 +1,5 @@
 import React from 'react';
-import SvgWrapper from './svg-wrapper';
+import SvgWrapper from './SvgWrapper';
 import { cn } from '@/lib/utils';
 
 export default function GoogleLogo({ className = '' }: { className?: string }) {

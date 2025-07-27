@@ -11,8 +11,8 @@ export default function KakaoLogo({ className = '' }: { className?: string }) {
       xmlns="http://www.w3.org/2000/svg"
     >
       <path
-        fill-rule="evenodd"
-        clip-rule="evenodd"
+        fillRule="evenodd"
+        clipRule="evenodd"
         d="M9.00002 0.600006C4.02917 0.600006 0 3.71296 0 7.55229C0 9.94003 1.5584 12.045 3.93152 13.297L2.93303 16.9445C2.84481 17.2668 3.21341 17.5237 3.49646 17.3369L7.87334 14.4482C8.2427 14.4839 8.61808 14.5047 9.00002 14.5047C13.9705 14.5047 17.9999 11.3918 17.9999 7.55229C17.9999 3.71296 13.9705 0.600006 9.00002 0.600006Z"
         fill="black"
       />

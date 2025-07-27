@@ -1,5 +1,5 @@
 import React from 'react';
-import SvgWrapper from './svg-wrapper';
+import SvgWrapper from './SvgWrapper';
 
 export default function Heart() {
   return (
