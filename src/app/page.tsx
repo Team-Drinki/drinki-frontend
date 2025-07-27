@@ -1,10 +1,10 @@
 'use client';
 
 import Image from 'next/image';
-import { Heart, Eye, MessageSquare, ChevronRight } from 'lucide-react';
 import { tastingNotes, communityPosts } from './mockup';
 import Title from '@/components/common/Title';
 import DrinkCard from '@/components/common/DrinkCard';
+import { HotCommunityPostCard } from '@/components/common/HotCommunityPostCard';
 
 export default function Home() {
   return (
@@ -12,13 +12,12 @@ export default function Home() {
       <header className="relative w-full h-140">
         <Image src="/images/main-banner.png" alt="Main Banner" fill className="object-cover" />
       </header>
-
       <main className="flex flex-col gap-20 my-20">
         <section>
           <Title className="mx-35 mb-8">
             <h2>Hot Tasting Note</h2>
           </Title>
-          <div className="overflow-x-auto py-14 bg-gray-100 scrollbar-hide">
+          <div className="overflow-x-auto py-14 pl-8 bg-gray-100 scrollbar-hide">
             <div className="flex flex-row gap-6 w-max px-1">
               {tastingNotes.map(note => (
                 <DrinkCard
@@ -39,18 +38,17 @@ export default function Home() {
           <Title className="mx-35">
             <h2>Hot Community Post</h2>
           </Title>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3 text-sm">
-            {communityPosts.map((post, index) => (
-              <div
-                key={post.id}
-                className={`flex items-start gap-2 p-3 rounded-md border ${
-                  index === 0 ? 'bg-yellow-300 text-black font-semibold' : 'bg-gray-50'
-                }`}
-              >
-                <span className="font-bold">{index + 1}</span>
-                <p>{post.title}</p>
-              </div>
-            ))}
+          <div className="bg-gray-100 px-40 py-10">
+            <div className="grid grid-cols-2 gap-x-17 gap-y-2">
+              {communityPosts.map((post, index) => (
+                <HotCommunityPostCard
+                  key={post.id}
+                  index={index}
+                  title={post.title}
+                  href={`/community/posts/${post.id}`}
+                />
+              ))}
+            </div>
           </div>
         </section>
       </main>

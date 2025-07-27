@@ -1,9 +1,10 @@
 'use client';
-
-import { Eye, Heart, MessageSquare } from 'lucide-react';
 import Image from 'next/image';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card } from '@/components/ui/card';
+import Eye from '../svg/eye';
+import Message from '../svg/message';
+import Heart from '../svg/heart';
 
 interface DrinkCardProps {
   title: string;
@@ -29,7 +30,7 @@ export default function DrinkCard({
       <div className="relative w-full h-[13rem]">
         <Image src={imageUrl} alt={title} fill className="object-cover" />
         <div className="absolute text-caption top-2.5 right-2.5 bg-yellow-100 px-2 py-1 rounded-[0.375rem] flex items-center gap-1">
-          <Heart size={14} className="text-yellow-500 fill-yellow-500" />
+          <Heart />
           {likes}
         </div>
       </div>
@@ -45,10 +46,10 @@ export default function DrinkCard({
           </div>
           <div className="flex items-center gap-2 text-caption">
             <div className="flex items-center gap-1">
-              <Eye className="size-3.5 text-brown" /> {views.toLocaleString()}
+              <Eye /> {views.toLocaleString()}
             </div>
             <div className="flex items-center gap-1">
-              <MessageSquare className="size-3.5 text-brown" /> {comments}
+              <Message /> {comments}
             </div>
           </div>
         </div>
