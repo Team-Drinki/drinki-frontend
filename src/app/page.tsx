@@ -39,7 +39,7 @@ export default function Home() {
             <h2>Hot Community Post</h2>
           </Title>
           <div className="bg-gray-100 px-40 py-10">
-            <div className="grid grid-cols-2 gap-x-17 gap-y-2">
+            <div className="grid grid-rows-5 grid-flow-col gap-x-17 gap-y-2">
               {communityPosts.map((post, index) => (
                 <HotCommunityPostCard
                   key={post.id}
