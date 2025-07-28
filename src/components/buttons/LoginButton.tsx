@@ -1,5 +1,5 @@
 import { ReactNode } from 'react';
-import CustomButton from '../common/custom-button';
+import CustomButton from '../common/CustomButton';
 
 interface LoginButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
@@ -12,7 +12,7 @@ export default function LoginButton({ children, className, icon, ...props }: Log
       className={`relative flex justify-center items-center w-80 h-10 rounded-lg font-semibold ${className}`}
       {...props}
     >
-      <span className="absolute left-2">{icon}</span>
+      <span className="absolute left-3">{icon}</span>
       <span>{children}</span>
     </CustomButton>
   );

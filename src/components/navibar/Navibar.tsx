@@ -1,15 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import MypageIcon from '../svg/mypage-icon';
 import { Button } from '../ui/button';
-import { DrinkDropdownContent } from './drop-down-menu';
 import { drinkCategories } from './const';
 import { cn } from '@/lib/utils';
 import { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { DrinkDropdownContent } from '@/components/navibar/DropDownMenu';
+import MypageIcon from '../svg/MypageIcon';
 
-export function Header() {
+export function Navibar() {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const isMobile = useIsMobile();
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -30,7 +30,7 @@ export function Header() {
   }, [isDropdownOpen]);
 
   return (
-    <header className="h-32 sticky top-0 z-50 w-full bg-white">
+    <nav className="h-32 sticky top-0 z-50 w-full bg-white">
       <div className="h-full container mx-auto flex items-center justify-between py-4 px-6">
         <div className="flex flex-row justify-start items-center min-w-3/5 max-md:w-full">
           <Link href="/">
@@ -40,7 +40,7 @@ export function Header() {
               className="w-36 rounded-xl hover:opacity-80 transition max-md:w-20"
             />
           </Link>
-          <nav className="w-full text-dark-brown text-head6 ml-10 max-md:ml-0 flex flex-row items-center justify-start text-brown-800 font-medium">
+          <div className="w-full text-dark-brown text-head6 ml-10 max-md:ml-0 flex flex-row items-center justify-start text-brown-800 font-medium">
             <div
               ref={dropdownRef}
               className="flex-1 relative group flex items-center justify-center"
@@ -69,12 +69,12 @@ export function Header() {
             >
               Community
             </Link>
-          </nav>
+          </div>
         </div>
         <Link href="/login">
           <MypageIcon className={isMobile ? 'size-5' : ''} />
         </Link>
       </div>
-    </header>
+    </nav>
   );
 }

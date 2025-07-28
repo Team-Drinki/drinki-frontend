@@ -1,9 +1,9 @@
 'use client';
 
 import { SiNaver } from 'react-icons/si';
-import LoginButton from '@/components/buttons/login-button';
-import GoogleLogo from '@/components/svg/google-logo';
-import KakaoLogo from '@/components/svg/kakao-logo';
+import GoogleLogo from '@/components/svg/GoogleLogo';
+import KakaoLogo from '@/components/svg/KakaoLogo';
+import LoginButton from '@/components/buttons/LoginButton';
 
 export default function LoginPage() {
   return (
