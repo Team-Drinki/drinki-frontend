@@ -73,3 +73,18 @@ export const communityPosts = [
   { id: 9, title: '술 마실 때 이런 안주 조합 추천합니다🔥' },
   { id: 10, title: '[토론] 위스키에도 계절이 있나요? 여름엔 애플리느 위스키는..' },
 ];
+
+export const alcohols = [
+  {
+    id: 1,
+    name: '발렌타인 30년 블렌디드 스카치 위스키',
+    imageUrl: '/images/whisky.png',
+    lgCategory: '위스키',
+    smCategory: '블렌디드 위스키',
+    region: '스코틀랜드',
+    abv: '40',
+    volume: '700ml',
+    distillery: '발렌타인',
+    rating: 3.8,
+  },
+];
