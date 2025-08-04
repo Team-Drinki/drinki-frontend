@@ -45,15 +45,6 @@ export default function AlcoholDetailPage() {
               <span className="text-head6 ml-2">{rating}</span>
             </dd>
           </dl>
-          <h5 className="text-head5">테이스팅 노트</h5>
-          <dl className="grid grid-cols-[auto_1fr] gap-x-8 gap-y-5 mt-9">
-            <dt className="text-head6 text-gray-900">향</dt>
-            <dd className="text-head6 text-gray-800">aaa</dd>
-            <dt className="text-head6 text-gray-900">맛</dt>
-            <dd className="text-head6 text-gray-800">ㅠㅠ</dd>
-            <dt className="text-head6 text-gray-900">피니시</dt>
-            <dd className="text-head6 text-gray-800">하이</dd>
-          </dl>
         </div>
       </section>
       {/* Best Tasting Notes Section */}
