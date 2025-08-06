@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { Inter } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import ReactQueryProvider from '@/lib/ReactQueryProvider';
+import SessionProvider from '@/components/SessionProvider';
 import AppWrapper from './AppWrapper';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -17,7 +18,9 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="en">
       <body className={cn(inter.className, 'flex flex-col min-h-screen')}>
         <ReactQueryProvider>
-          <AppWrapper>{children}</AppWrapper>
+          <SessionProvider>
+            <AppWrapper>{children}</AppWrapper>
+          </SessionProvider>
         </ReactQueryProvider>
       </body>
     </html>

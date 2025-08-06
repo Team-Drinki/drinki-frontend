@@ -4,6 +4,7 @@ import { SiNaver } from 'react-icons/si';
 import GoogleLogo from '@/components/svg/GoogleLogo';
 import KakaoLogo from '@/components/svg/KakaoLogo';
 import LoginButton from '@/components/buttons/LoginButton';
+import { signIn } from 'next-auth/react';
 
 export default function LoginPage() {
   return (
@@ -24,6 +25,7 @@ export default function LoginPage() {
         </LoginButton>
         <LoginButton
           className="bg-[#F2F2F2] hover:bg-[#e0e0e0]"
+          onClick={() => signIn('google')}
           icon={<GoogleLogo className="size-4.5" />}
         >
           <p className="font-semibold text-sm text-black">Google 계정으로 로그인</p>
