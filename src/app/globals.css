@@ -130,7 +130,7 @@
   --color-grey-400: oklch(0.8004 0.0055 106.52);
   --color-grey-500: oklch(0.7013 0.0057 106.55);
   --color-grey-600: oklch(0.5952 0.006 106.58);
-  --color-grey-700: oklch(0.4842 0.0063 106.63);
+  --color-grey-700: #5f5f5b;
   --color-grey-800: oklch(0.3663 0.0067 106.73);
   --color-black: oklch(0.2378 0.0075 106.95);
   --color-white: oklch(1 0 0);
@@ -223,7 +223,7 @@
   }
 
   .text-button {
-    font-size: 1rem;
+    font-size: 16px;
     line-height: 1.4;
     font-weight: 600;
   }
