@@ -11,7 +11,7 @@ export type TooltipOption = {
   className?: string;
 };
 
-type ClickTooltipProps = {
+type CustomTooltipProps = {
   /** 아이콘/텍스트 등 트리거 UI */
   trigger: React.ReactNode;
   /** 간단한 목록형 옵션들 (label, onSelect) */
@@ -28,7 +28,7 @@ type ClickTooltipProps = {
   closeOnSelect?: boolean;
 };
 
-export default function ClickTooltip({
+export default function CustomTooltip({
   trigger,
   options,
   content,
@@ -37,7 +37,7 @@ export default function ClickTooltip({
   sideOffset = 6,
   contentClassName,
   closeOnSelect = true,
-}: ClickTooltipProps) {
+}: CustomTooltipProps) {
   const [open, setOpen] = React.useState(false);
   const toggle = () => setOpen(v => !v);
   const close = () => setOpen(false);

@@ -1,6 +1,7 @@
+'use client';
 import { useForm } from 'react-hook-form';
 import { Form, FormControl, FormField, FormItem } from '../ui/form';
-import z from 'zod';
+import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import SubmitButton from '../buttons/SubmitButton';
 

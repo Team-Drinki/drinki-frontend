@@ -1,35 +1,52 @@
+'use client';
 import Image from 'next/image';
-import { Ellipsis } from 'lucide-react';
 import Heart from '@/components/svg/Heart';
-import CustomTooltip from '../common/CustomTooltip';
+import CommentActionMenu from './CommentActionMenu';
+
 interface CommentProps {
+  commentId: number | string;
+  authorId: number;
   nickname: string;
   date: string;
   content: string;
   likes: number;
-  avatarUrl: string;
+  avatarUrl?: string;
 }
 
-export default function Comment({ nickname, date, content, likes, avatarUrl }: CommentProps) {
+export default function Comment({
+  commentId,
+  authorId,
+  nickname,
+  date,
+  content,
+  likes,
+  avatarUrl,
+}: CommentProps) {
+  const currentUserId = 1; // 현재 로그인한 사용자 id (자신이 작성한 포스트/댓글일 경우 더보기 버튼 툴팁이 바뀜)
+
   return (
     <div className="flex flex-col gap-2.5 py-6">
       <div className="flex place-content-between">
         <div className="flex items-center gap-2.5">
-          <Image src={avatarUrl} alt="profile" width={50} height={50} className="rounded-full" />
+          {/* 아바타 영역 */}
+          {avatarUrl ? (
+            <Image
+              src={avatarUrl}
+              alt={`${nickname} avatar`}
+              width={32}
+              height={32}
+              className="rounded-full object-cover"
+            />
+          ) : (
+            <div className="flex size-8 items-center justify-center rounded-full bg-gray-200 text-xs font-medium">
+              {nickname?.[0] ?? '?'}
+            </div>
+          )}
           <span className="text-head6 text-black">{nickname}</span>
         </div>
         <div className="flex items-center gap-2.5">
           <span className="text-caption text-black">{date}</span>
-          <CustomTooltip
-            trigger={<Ellipsis size={24} />}
-            options={[
-              {
-                key: 'report',
-                label: '신고',
-                onSelect: () => console.log('신고'),
-              },
-            ]}
-          />
+          <CommentActionMenu commentId={commentId} isOwner={authorId == currentUserId} />
         </div>
       </div>
       <span className="text-body1 text-black">{content}</span>

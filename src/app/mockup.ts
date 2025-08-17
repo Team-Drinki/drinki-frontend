@@ -89,23 +89,28 @@ export const alcohols = [
   },
 ];
 
-export const comments = [
+export const communityPostsDetail = [
   {
-    id: 1,
-    nikname: '닉네임',
+    id: '1',
+    title: '글렌피딕 12년 처음 마셔봄',
+    authorId: 1,
+    author: 'Alice',
+    createdAt: '2025.07.22. 2:15',
+    views: 372,
+    postLikes: 4,
+    commentsCount: 21,
     content:
-      '오오 글렌피딕에 다크 초콜릿은 클래식 조합이죠..! 과일향 나는 위스키에는 블루치즈도 잘 어울려요. 발베니 14년이나 글렌드로낙 한번 시도해보세요 :)',
-    date: '2025.07.22. 2:15',
-    likes: 3,
-    avatarUrl: '/images/avatar.png',
+      '위스키에 진짜 관심 하나도 없다가, 최근에 지인이 글렌피딕 12년을 선물해줘서 처음 마셔봤어요.',
   },
   {
-    id: 2,
-    nikname: '닉네임2',
-    content:
-      '저도 글렌피딕 12년 좋아하는데, 다크 초콜릿 조합은 처음 들어봐요! 다음에 꼭 시도해봐야겠어요. 감사합니다!',
-    date: '2025.07.22. 3:00',
-    likes: 5,
-    avatarUrl: '/images/avatar.png',
+    id: '2',
+    title: '글렌피딕 12년 개별로',
+    authorId: 2,
+    author: 'Bob',
+    createdAt: '2025.07.24. 2:15',
+    views: 72,
+    postLikes: 20,
+    commentsCount: 30,
+    content: '글렌피딕 붐따~',
   },
 ];
