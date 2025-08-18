@@ -38,7 +38,7 @@ export default function Searchbar({
         type="text"
         placeholder={placeholder}
         onKeyDown={handleKeyPress}
-        className="outline-brown max-lg:w-full outline-2 rounded-full w-[726px] px-10 py-4 text-head5 bg-transparent text-black placeholder:text-gray-700 focus:text-Dark-Gray placeholder:focus:text-gray-900"
+        className="outline-brown max-lg:w-full outline-2 rounded-full w-[726px] px-10 py-4 text-head5 bg-transparent text-black placeholder:text-grey-700 focus:text-grey-900 placeholder:focus:text-gray-900"
       />
       <Search className="absolute size-8 text-brown right-[40px] top-1/2 transform -translate-y-1/2" />
     </div>

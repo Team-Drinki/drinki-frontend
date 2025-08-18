@@ -29,7 +29,7 @@ export default function CommunityPage() {
         <div className="h-16" />
         <div className="flex flex-row justify-between w-full px-[124px]">
           <div className="flex flex-row gap-3">
-            <CustomButton className="bg-gray-300 text-button text-brown rounded-[8px] px-[31px] py-[11.5px]">
+            <CustomButton className="bg-grey-300 text-button text-brown rounded-[8px] px-[31px] py-[11.5px]">
               자유
             </CustomButton>
             <CustomButton className="bg-yellow-main text-button text-brown rounded-[8px] px-[31px] py-[11.5px]">
