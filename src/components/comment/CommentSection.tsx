@@ -13,21 +13,18 @@ export default async function CommentSection({ postId }: { postId: string }) {
   const renderTree = (nodes: CommentNode[], depth = 0) => (
     <ul className={depth === 0 ? 'divide-y divide-grey-400' : 'space-y-0'}>
       {nodes.map(n => (
-        <li key={n.id} className={depth === 0 ? 'py-6' : 'pt-4'}>
-          <div className={depth > 0 ? 'border-l pl-4 md:pl-6' : ''}>
-            <Comment
-              commentId={n.id}
-              authorId={n.authorId}
-              nickname={n.author}
-              date={new Date(n.createdAt).toLocaleString()}
-              content={n.content}
-              likes={n.likes ?? 0}
-              avatarUrl={n.avatarUrl}
-            />
-            {n.children.length > 0 && (
-              <div className="mt-2">{renderTree(n.children, depth + 1)}</div>
-            )}
-          </div>
+        <li key={n.id}>
+          <Comment
+            commentId={n.id}
+            authorId={n.authorId}
+            nickname={n.author}
+            date={new Date(n.createdAt).toLocaleString()}
+            content={n.content}
+            likes={n.likes ?? 0}
+            avatarUrl={n.avatarUrl}
+            depth={depth}
+          />
+          {n.children.length > 0 && renderTree(n.children, depth + 1)}
         </li>
       ))}
     </ul>

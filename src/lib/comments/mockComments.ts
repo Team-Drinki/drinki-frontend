@@ -47,7 +47,7 @@ export const mockComments: ApiComment[] = [
     authorId: 4,
     author: 'Dave',
     createdAt: '2025-08-10T11:00:00.000Z',
-    parentId: 'c1',
+    parentId: 'c1-1',
     content: '추가 의견 남겨요.',
     likes: 0,
     avatarUrl: '',
