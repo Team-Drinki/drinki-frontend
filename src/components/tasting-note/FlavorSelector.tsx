@@ -139,7 +139,6 @@ function FlavorTile({
             <span className="absolute bottom-1 left-1 rounded-md bg-white px-1.5 text-xs font-semibold">
               {score.toFixed(1)}
             </span>
-            {/* 안쪽 삭제는 button 유지 (이제 중첩 아님) */}
             <button
               type="button"
               className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-xs shadow"

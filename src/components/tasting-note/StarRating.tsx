@@ -97,7 +97,7 @@ export default function StarRating({
 }
 
 function StarSVG({ size, className }: { size: number; className?: string }) {
-  // 깔끔한 별 SVG (currentColor 사용)
+  //별 SVG (currentColor 사용)
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
       <path

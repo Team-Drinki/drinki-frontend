@@ -4,7 +4,13 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ChevronLeft } from 'lucide-react';
 import RichTextEditor from '@/components/editor/RichTextEditor';
 
@@ -23,8 +29,8 @@ export default function CommunityWritePage() {
       <div className="container mx-auto px-6 py-8">
         {/* 뒤로가기 버튼 */}
         <div className="mb-6">
-          <Link 
-            href="/community" 
+          <Link
+            href="/community"
             className="flex items-center text-brown-800 hover:text-brown-600 transition-colors"
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
@@ -60,14 +66,12 @@ export default function CommunityWritePage() {
 
               {/* 제목 입력 */}
               <div>
-                <label className="block text-sm font-medium text-brown-800 mb-2">
-                  제목
-                </label>
+                <label className="block text-sm font-medium text-brown-800 mb-2">제목</label>
                 <Input
                   type="text"
                   placeholder="제목을 입력해주세요"
                   value={title}
-                  onChange={(e) => setTitle(e.target.value)}
+                  onChange={e => setTitle(e.target.value)}
                   className="w-full bg-white border-brown-200 focus:border-brown-400"
                 />
               </div>
@@ -76,10 +80,7 @@ export default function CommunityWritePage() {
 
           {/* 리치 텍스트 에디터 */}
           <div className="mb-6">
-            <RichTextEditor 
-              content={content}
-              onChange={setContent}
-            />
+            <RichTextEditor content={content} onChange={setContent} />
           </div>
 
           {/* 등록하기 버튼 */}
