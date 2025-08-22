@@ -3,6 +3,7 @@ import Image from 'next/image';
 import Heart from '@/components/svg/Heart';
 import CommentActionMenu from './CommentActionMenu';
 import clsx from 'clsx';
+import { useReplyComposer } from './ReplyComposerContext';
 
 interface CommentProps {
   commentId: number | string;
@@ -23,9 +24,11 @@ export default function Comment({
   content,
   likes,
   avatarUrl,
-  depth = 0, // 대댓글의 깊이 (기본값 0)
+  depth = 0,
 }: CommentProps) {
   const currentUserId = 1; // 현재 로그인한 사용자 id (자신이 작성한 포스트/댓글일 경우 더보기 버튼 툴팁이 바뀜)
+
+  const { openFor } = useReplyComposer();
 
   return (
     <div className={clsx('flex py-6 gap-4.5', depth > 0 && 'border-t-1 border-grey-400')}>
@@ -74,7 +77,11 @@ export default function Comment({
         </div>
         <span className="text-body1 text-black">{content}</span>
         <div className="flex items-center gap-7.5 text-caption text-sub-1">
-          <div className="text-sub-1">답글 쓰기</div>
+          {depth === 0 && (
+            <div className="text-sub-1" onClick={() => openFor(String(commentId))}>
+              답글쓰기
+            </div>
+          )}
           <div className="flex gap-0.5 items-center">
             <Heart fill={false} />
             <span className="text-caption text-sub-1">{likes}</span>

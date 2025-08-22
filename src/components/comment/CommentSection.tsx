@@ -5,6 +5,8 @@ import CommentIcon from '../svg/CommentIcon';
 import { communityPostsDetail } from '@/app/mockup';
 import { mockComments } from '@/lib/comments/mockComments';
 import { buildCommentTree, type CommentNode } from '@/lib/comments/buildCommentTree';
+import { ReplyComposerProvider } from './ReplyComposerContext';
+import ReplySlot from './ReplySlot';
 
 export default async function CommentSection({ postId }: { postId: string }) {
   const tree = buildCommentTree(mockComments);
@@ -25,6 +27,7 @@ export default async function CommentSection({ postId }: { postId: string }) {
             depth={depth}
           />
           {n.children.length > 0 && renderTree(n.children, depth + 1)}
+          <ReplySlot postId={postId} parentId={n.id} depth={depth} />
         </li>
       ))}
     </ul>
@@ -42,10 +45,12 @@ export default async function CommentSection({ postId }: { postId: string }) {
           <span>{mockComments.length}</span>
         </div>
       </div>
-      <div className="flex flex-col px-6 bg-grey-100 rounded-lg divide-y-1 divide-grey-400">
-        {renderTree(tree)}
-      </div>
-      <CommentForm nickname="작성자 닉네임" />
+      <ReplyComposerProvider>
+        <div className="flex flex-col px-6 bg-grey-100 rounded-lg divide-y-1 divide-grey-400">
+          {renderTree(tree)}
+        </div>
+      </ReplyComposerProvider>
+      <CommentForm nickname="작성자 닉네임" postId={postId} />
     </section>
   );
 }
