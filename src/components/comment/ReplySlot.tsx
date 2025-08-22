@@ -16,7 +16,6 @@ export default function ReplySlot({
 
   const { openId, close } = useReplyComposer();
   const isOpenHere = String(openId) === String(parentId);
-  if (!isOpenHere) return null;
 
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -31,6 +30,7 @@ export default function ReplySlot({
       inputRef.current?.focus();
     });
   }, [isOpenHere]);
+  if (!isOpenHere) return null;
 
   return (
     <div
