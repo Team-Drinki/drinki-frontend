@@ -13,6 +13,8 @@ import { Table as TableExtension } from '@tiptap/extension-table';
 import TableRow from '@tiptap/extension-table-row';
 import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
+import TaskList from '@tiptap/extension-task-list';
+import TaskItem from '@tiptap/extension-task-item';
 import {
   Bold,
   Italic,
@@ -91,6 +93,29 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     }
   };
 
+  // 투표
+  const addPoll = () => {
+    editor
+      ?.chain()
+      .focus()
+      .insertContent({
+        type: 'taskList',
+        content: [
+          {
+            type: 'taskItem',
+            attrs: { checked: false },
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: '선택지 1' }] }],
+          },
+          {
+            type: 'taskItem',
+            attrs: { checked: false },
+            content: [{ type: 'paragraph', content: [{ type: 'text', text: '선택지 2' }] }],
+          },
+        ],
+      })
+      .run();
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit,
@@ -105,6 +130,8 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       TableRow,
       TableHeader,
       TableCell,
+      TaskList,
+      TaskItem.configure({ nested: true }),
     ],
     content,
 
@@ -234,33 +261,18 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
               <MapPin className="w-4 h-4 mr-1" />
               장소
             </Button>
+
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
-              disabled
-            >
-              <Search className="w-4 h-4 mr-1" />
-              글감
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
+              onClick={addPoll}
               className="h-8 px-2 text-brown-700 hover:bg-brown-100"
               disabled
             >
               <BarChart3 className="w-4 h-4 mr-1" />
               투표
             </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
-              disabled
-            >
-              <Calendar className="w-4 h-4 mr-1" />
-              일정
-            </Button>
+
             <Button
               variant="ghost"
               size="sm"
@@ -277,15 +289,6 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
             >
               <Code className="w-4 h-4 mr-1" />
               소스코드
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
-              disabled
-            >
-              <SquareDot className="w-4 h-4 mr-1" />
-              수식
             </Button>
           </div>
         </div>
@@ -534,18 +537,17 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
             <MapPin className="w-4 h-4 mr-1" />
             장소
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-brown-700 hover:bg-brown-100">
-            <Search className="w-4 h-4 mr-1" />
-            글감
-          </Button>
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-brown-700 hover:bg-brown-100">
+
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={addPoll}
+            className={`h-8 px-2 text-brown-700 hover:bg-brown-100 ${editor.isActive('taskList') ? 'bg-brown-100' : ''}`}
+          >
             <BarChart3 className="w-4 h-4 mr-1" />
             투표
           </Button>
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-brown-700 hover:bg-brown-100">
-            <Calendar className="w-4 h-4 mr-1" />
-            일정
-          </Button>
+
           <Button
             variant="ghost"
             size="sm"
@@ -562,10 +564,6 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
           >
             <Code className="w-4 h-4 mr-1" />
             소스코드
-          </Button>
-          <Button variant="ghost" size="sm" className="h-8 px-2 text-brown-700 hover:bg-brown-100">
-            <SquareDot className="w-4 h-4 mr-1" />
-            수식
           </Button>
         </div>
       </div>

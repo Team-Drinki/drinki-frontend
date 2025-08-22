@@ -20,27 +20,27 @@ export default function AlcoholDetailPage() {
         </div>
         <div className="flex flex-col">
           <div className="flex flex-row items-center mb-5">
-            <span className="text-head6 text-gray-800">{lgCategory}</span>
+            <span className="text-head6 text-grey-800">{lgCategory}</span>
             <ChevronRight className="size-8" />
-            <span className="text-head6 text-gray-800">{smCategory}</span>
+            <span className="text-head6 text-grey-800">{smCategory}</span>
           </div>
           <h3 className="text-head3 mb-2">{name}</h3>
           <WishListButton />
           <dl className="grid grid-cols-[auto_1fr] gap-x-8 gap-y-5 mt-8 mb-21">
-            <dt className="text-head6 text-gray-900">용량</dt>
-            <dd className="text-head6 text-gray-800">{volume}</dd>
+            <dt className="text-head6 text-grey-900">용량</dt>
+            <dd className="text-head6 text-grey-800">{volume}</dd>
 
-            <dt className="text-head6 text-gray-900">도수</dt>
-            <dd className="text-head6 text-gray-800">{abv}%</dd>
+            <dt className="text-head6 text-grey-900">도수</dt>
+            <dd className="text-head6 text-grey-800">{abv}%</dd>
 
-            <dt className="text-head6 text-gray-900">지역</dt>
-            <dd className="text-head6 text-gray-800">{region}</dd>
+            <dt className="text-head6 text-grey-900">지역</dt>
+            <dd className="text-head6 text-grey-800">{region}</dd>
 
-            <dt className="text-head6 text-gray-900">증류소</dt>
-            <dd className="text-head6 text-gray-800">{distillery}</dd>
+            <dt className="text-head6 text-grey-900">증류소</dt>
+            <dd className="text-head6 text-grey-800">{distillery}</dd>
 
-            <dt className="text-head6 text-gray-900">평점</dt>
-            <dd className="flex items-center gap-2.7 text-gray-800">
+            <dt className="text-head6 text-grey-900">평점</dt>
+            <dd className="flex items-center gap-2.7 text-grey-800">
               <Rating rating={rating} />
               <span className="text-head6 ml-2">{rating}</span>
             </dd>
