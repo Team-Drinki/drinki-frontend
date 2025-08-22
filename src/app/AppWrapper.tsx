@@ -2,7 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import Footer from '@/components/Footer';
-import { Navibar } from '@/components/navibar/Navibar';
+import { Navibar } from '@/components/common/navibar/Navibar';
 import { ReactNode } from 'react';
 
 export default function AppWrapper({ children }: { children: ReactNode }) {

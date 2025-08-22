@@ -17,7 +17,7 @@ export default function Home() {
           <Title className="mx-35 mb-8">
             <h2>Hot Tasting Note</h2>
           </Title>
-          <div className="overflow-x-auto py-14 pl-8 bg-gray-100 scrollbar-hide">
+          <div className="overflow-x-auto py-14 pl-8 bg-grey-100 scrollbar-hide">
             <div className="flex flex-row gap-6 w-max px-1">
               {tastingNotes.map(note => (
                 <DrinkCard
@@ -38,7 +38,7 @@ export default function Home() {
           <Title className="mx-35">
             <h2>Hot Community Post</h2>
           </Title>
-          <div className="bg-gray-100 px-40 py-10">
+          <div className="bg-grey-100 px-40 py-10">
             <div className="grid grid-rows-5 grid-flow-col gap-x-17 gap-y-2">
               {communityPosts.map((post, index) => (
                 <HotCommunityPostCard
