@@ -7,40 +7,52 @@ export type FlavorGroupSelection = Record<FlavorGroup, Record<string, number>>;
 
 const VOCABS: Record<FlavorGroup, string[]> = {
   Aroma: [
-    '사과·배',
-    '허니',
-    '바닐라',
-    '시트러스',
-    '꽃향',
-    '허브',
-    '몰트·곡물',
-    '스모크',
+    '꿀,설탕,시럽',
+    '카라멜',
+    '바닐라,버터',
+    '사과,배',
+    '감귤',
+    '바나나,망고',
+    '말린 자두, 무화과',
+    '체리,라즈베리',
+    '곡물,빵,견과류',
     '시나몬',
-    '넛츠',
+    '초콜릿,커피',
+    '바다',
+    '나무',
+    '약품',
   ],
   Palate: [
-    '꿀',
+    '꿀,설탕,시럽',
     '카라멜',
-    '바닐라',
-    '말티',
-    '오크',
-    '초콜릿',
-    '건과일',
-    '향신료',
-    '시트러스',
-    '소금기',
+    '바닐라,버터',
+    '사과,배',
+    '감귤',
+    '바나나,망고',
+    '말린 자두, 무화과',
+    '체리,라즈베리',
+    '곡물,빵,견과류',
+    '시나몬',
+    '초콜릿,커피',
+    '바다',
+    '나무',
+    '약품',
   ],
   Finish: [
-    '짧음',
-    '중간',
-    '길음',
-    '드라이',
-    '스파이시',
-    '스모키',
-    '달콤함',
-    '쓴맛',
-    '따뜻함',
-    '오일리',
+    '꿀,설탕,시럽',
+    '카라멜',
+    '바닐라,버터',
+    '사과,배',
+    '감귤',
+    '바나나,망고',
+    '말린 자두, 무화과',
+    '체리,라즈베리',
+    '곡물,빵,견과류',
+    '시나몬',
+    '초콜릿,커피',
+    '바다',
+    '나무',
+    '약품',
   ],
 };
 
@@ -52,7 +64,7 @@ export default function FlavorSelector({
   onChange: (v: FlavorGroupSelection) => void;
 }) {
   const [tab, setTab] = useState<FlavorGroup>('Aroma');
-
+  const cols = Math.ceil(VOCABS[tab].length / 2);
   const setScore = (group: FlavorGroup, label: string, score: number) => {
     const next = { ...value, [group]: { ...(value[group] || {}) } };
     if (score <= 0) delete next[group][label];
@@ -79,7 +91,10 @@ export default function FlavorSelector({
         })}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div
+        className="grid grid-cols-2 gap-3 sm:[grid-template-columns:repeat(var(--cols),minmax(0,1fr))]"
+        style={{ ['--cols' as any]: Math.ceil(VOCABS[tab].length / 2) }}
+      >
         {VOCABS[tab].map(label => (
           <FlavorTile
             key={label}
@@ -121,7 +136,6 @@ function FlavorTile({
 
   return (
     <div className="relative" onMouseLeave={() => setShowBubble(false)}>
-      {/* 바깥을 div(role=button)로 변경 */}
       <div
         role="button"
         tabIndex={0}

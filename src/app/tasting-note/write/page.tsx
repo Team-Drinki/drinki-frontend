@@ -80,7 +80,7 @@ export default function TastingNoteWritePage() {
 
         <div className="mx-auto max-w-5xl">
           {/* 상단 컨트롤 */}
-          <div className="bg-yellow-50 p-6 rounded-lg mb-6">
+          <div className="bg-yellow-100 border border-yellow-200 p-6 rounded-lg shadow-sm">
             <div className="grid grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium text-brown-800 mb-2">
@@ -103,90 +103,94 @@ export default function TastingNoteWritePage() {
                 />
               </div>
             </div>
+          </div>
 
-            <div className="mt-4 flex gap-3">
-              <Button
-                className="bg-amber-400 text-brown-900 hover:bg-amber-300"
-                onClick={() => setMode('beginner')}
-              >
-                초심자를 위한 테이스팅 노트 작성 폼
-              </Button>
-              <Button
-                variant="outline"
-                className="border-brown-200 text-brown-700"
-                onClick={() => alert('고수용 폼은 다음 단계에서 연결할게요')}
-              >
-                고수들을 위한 테이스팅 노트 작성 폼
-              </Button>
+          <div className="mt-4 mb-6 grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+            <Button
+              className="w-full bg-amber-400 hover:bg-amber-300 text-brown-900
+               border-2 border-amber-500 rounded-lg shadow-sm py-3"
+              onClick={() => setMode('beginner')}
+            >
+              초심자를 위한 테이스팅 노트 작성 폼
+            </Button>
+
+            <Button
+              variant="outline"
+              className="w-full bg-white hover:bg-brown-50 text-brown-800
+               border-2 border-brown-700 rounded-lg shadow-sm py-3"
+              onClick={() => alert('고수용 폼은 다음 단계에서 연결할게요')}
+            >
+              고수들을 위한 테이스팅 노트 작성 폼
+            </Button>
+          </div>
+
+          <div className="rounded-lg bg-gray-100 p-6">
+            {/* 사진 자리표시자 */}
+            <section className="mb-8">
+              <h3 className="mb-3 text-sm font-semibold text-brown-800">사진 (최대 3장)</h3>
+              <ImagePicker images={images} onChange={setImages} max={3} />
+            </section>
+
+            {/* 메타 입력 */}
+            <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field
+                label="위스키 이름"
+                value={whisky.name}
+                onChange={v => setWhisky({ ...whisky, name: v })}
+              />
+              <Field
+                label="시음 날짜"
+                value={whisky.date}
+                onChange={v => setWhisky({ ...whisky, date: v })}
+              />
+              <Field
+                label="알코올 도수"
+                value={whisky.abv}
+                onChange={v => setWhisky({ ...whisky, abv: v })}
+              />
+              <Field
+                label="종류"
+                value={whisky.type}
+                onChange={v => setWhisky({ ...whisky, type: v })}
+              />
+              <Field
+                label="가격"
+                value={whisky.price}
+                onChange={v => setWhisky({ ...whisky, price: v })}
+              />
+              <Field
+                label="지역"
+                value={whisky.region}
+                onChange={v => setWhisky({ ...whisky, region: v })}
+              />
+              {/* 별점 */}
+              <StarRating value={rating} onChange={setRating} />
+            </section>
+
+            {/* Appearance */}
+            <section className="mb-8">
+              <h3 className="mb-2 text-sm font-semibold text-brown-800">Appearance (외관)</h3>
+              <AppearanceBar value={appearance} onChange={setAppearance} />
+            </section>
+
+            {/* Aroma / Palate / Finish 자리표시자 */}
+            <section className="mb-8">
+              <FlavorSelector value={flavors} onChange={setFlavors} />
+            </section>
+            {/* Comment: textarea 버전 */}
+            <div className="mb-6">
+              <label className="mb-1 block text-sm font-semibold text-brown-800">Comment</label>
+              <textarea
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                rows={6}
+                placeholder="자유롭게 시음 소감을 남겨주세요."
+                className="w-full resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none"
+              />
             </div>
           </div>
-
-          {/* 사진 자리표시자 */}
-          <section className="mb-8">
-            <h3 className="mb-3 text-sm font-semibold text-brown-800">사진 (최대 3장)</h3>
-            <ImagePicker images={images} onChange={setImages} max={3} />
-          </section>
-
-          {/* 메타 입력 */}
-          <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Field
-              label="위스키 이름"
-              value={whisky.name}
-              onChange={v => setWhisky({ ...whisky, name: v })}
-            />
-            <Field
-              label="시음 날짜"
-              value={whisky.date}
-              onChange={v => setWhisky({ ...whisky, date: v })}
-            />
-            <Field
-              label="알코올 도수"
-              value={whisky.abv}
-              onChange={v => setWhisky({ ...whisky, abv: v })}
-            />
-            <Field
-              label="종류"
-              value={whisky.type}
-              onChange={v => setWhisky({ ...whisky, type: v })}
-            />
-            <Field
-              label="가격"
-              value={whisky.price}
-              onChange={v => setWhisky({ ...whisky, price: v })}
-            />
-            <Field
-              label="지역"
-              value={whisky.region}
-              onChange={v => setWhisky({ ...whisky, region: v })}
-            />
-            {/* 별점 */}
-            <StarRating value={rating} onChange={setRating} />
-          </section>
-
-          {/* Appearance */}
-          <section className="mb-8">
-            <h3 className="mb-2 text-sm font-semibold text-brown-800">Appearance (외관)</h3>
-            <AppearanceBar value={appearance} onChange={setAppearance} />
-          </section>
-
-          {/* Aroma / Palate / Finish 자리표시자 */}
-          <section className="mb-8">
-            <FlavorSelector value={flavors} onChange={setFlavors} />
-          </section>
-          {/* Comment: textarea 버전 */}
-          <div className="mb-6">
-            <label className="mb-1 block text-sm font-semibold text-brown-800">Comment</label>
-            <textarea
-              value={comment}
-              onChange={e => setComment(e.target.value)}
-              rows={6}
-              placeholder="자유롭게 시음 소감을 남겨주세요."
-              className="w-full resize-y rounded-md border border-gray-300 bg-white px-3 py-2 text-sm outline-none"
-            />
-          </div>
-
           {/* 등록 버튼 */}
-          <div className="flex justify-end">
+          <div className="flex justify-end mt-6">
             <Button
               onClick={handleSubmit}
               className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 py-2 rounded-lg font-medium"
