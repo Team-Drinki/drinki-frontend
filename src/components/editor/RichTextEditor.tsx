@@ -56,6 +56,7 @@ import { useState, useEffect, useRef } from 'react';
 interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
+  className?: string;
 }
 
 export default function RichTextEditor({ content, onChange }: RichTextEditorProps) {
