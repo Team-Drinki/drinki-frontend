@@ -88,3 +88,29 @@ export const alcohols = [
     rating: 3.8,
   },
 ];
+
+export const communityPostsDetail = [
+  {
+    id: '1',
+    title: '글렌피딕 12년 처음 마셔봄',
+    authorId: 1,
+    author: 'Alice',
+    createdAt: '2025.07.22. 2:15',
+    views: 372,
+    postLikes: 4,
+    commentsCount: 21,
+    content:
+      '위스키에 진짜 관심 하나도 없다가, 최근에 지인이 글렌피딕 12년을 선물해줘서 처음 마셔봤어요.',
+  },
+  {
+    id: '2',
+    title: '글렌피딕 12년 개별로',
+    authorId: 2,
+    author: 'Bob',
+    createdAt: '2025.07.24. 2:15',
+    views: 72,
+    postLikes: 20,
+    commentsCount: 30,
+    content: '글렌피딕 붐따~',
+  },
+];
