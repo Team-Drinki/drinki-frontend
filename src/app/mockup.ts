@@ -114,3 +114,49 @@ export const communityPostsDetail = [
     content: '글렌피딕 붐따~',
   },
 ];
+
+export const tastingNoteDetail = [
+  {
+    id: '1',
+    alcoholcategory: 'WHISKEY',
+    noteType: 'beginner',
+    title: '발렌타인 30년 블렌디드 스카치 위스키 맛있어요',
+    authorNickname: '닉네임',
+    createdAt: '2024.07.21',
+    views: 2025,
+    profileImage: '/images/avatar.png',
+    content: {
+      images: [
+        '/images/whisky.png',
+        '/images/main-banner.png',
+        '/images/avatar.png',
+        '/images/whisky.png',
+        '/images/whisky.png',
+      ],
+      alchoolName: '발렌타인 30년 블렌디드 스카치 위스키',
+      avb: 40,
+      price: 100000,
+      rate: 4,
+      tasteDate: '2024.07.21',
+      type: '위스키',
+      region: '스코틀랜드',
+      appearance: 14,
+      aroma: [
+        { name: '카라멜', value: 2.5 },
+        { name: '바닐라', value: 3.5 },
+        { name: '오크', value: 4 },
+      ],
+      palate: [
+        { name: '과일', value: 3 },
+        { name: '스파이시', value: 2.5 },
+        { name: '꿀', value: 4 },
+      ],
+      finish: [
+        { name: '오크', value: 3.5 },
+        { name: '스모키', value: 2 },
+        { name: '견과류', value: 4 },
+      ],
+      comment: '처음 마셔보는 위스키였는데, 기대 이상이었어요. 다음에도 꼭 다시 구매하고 싶습니다.',
+    },
+  },
+];
