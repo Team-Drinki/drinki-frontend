@@ -24,7 +24,7 @@ export default function FlavorGroupCard({
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="rounded-xl border border-brown-200 bg-amber-50/60"
+      className="w-full rounded-xl border border-brown-200 bg-amber-50/60"
     >
       {/* 헤더 */}
       <div className="flex items-center justify-between px-3 pt-3">
@@ -32,7 +32,7 @@ export default function FlavorGroupCard({
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border border-brown-300 text-xs text-brown-700">
+                <span className="flex h-5 w-5 items-center justify-center rounded-full border-2 border-[#5F5F3B] text-[15px] text-[#5F5F3B] leading-none">
                   i
                 </span>
               </TooltipTrigger>
@@ -44,7 +44,7 @@ export default function FlavorGroupCard({
             </Tooltip>
           </TooltipProvider>
 
-          <div className="mb-2 font-semibold text-brown-900">{label}</div>
+          <span className="font-semibold text-brown-900">{label}</span>
         </div>
 
         {/* 토글 버튼 (▲/▼ 느낌) */}

@@ -11,8 +11,8 @@ import AppearanceBar, { type AppearanceColor } from '@/components/tasting-note/A
 import FlavorSelector, {
   type FlavorGroupSelection,
 } from '@/components/tasting-note/FlavorSelector';
-import IntensityPopover from '@/components/tasting-note/IntensityPopover';
 import FlavorGroupCard from '@/components/tasting-note/FlavorGroupCard';
+import { FLAVOR_GROUPS } from '@/components/tasting-note/FlavorGroups';
 
 type WhiskyMeta = {
   name: string;
@@ -375,124 +375,57 @@ function ExpertForm(props: {
         <AppearanceBar value={appearance} onChange={setAppearance} detailed />
       </section>
 
-      {/* 세부 향미 그룹 (드롭다운 카드) */}
-      <section className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {[
-          {
-            key: 'natural-sweet',
-            label: '은은한 단맛 (Natural Sweet)',
-            info: '에틸 락테이트와 알데하이드류가 꿀이나 시럽 같은 단맛을 내며, 발효 과정에서 생기는 에스터와 남아 있는 당분이 주된 원인입니다.',
-            items: ['꿀', '시럽'],
-          },
-          {
-            key: 'caramelized',
-            label: '카라멜 단맛 (Caramelized)',
-            info: '퓨란과 멜라노이딘이 카라멜·토피 같은 풍미를 주며, 몰트 건조(킬닝)나 오크통 토스팅 시 일어나는 마이야르 반응과 고온 캐러멜화가 핵심입니다.',
-            items: ['카라멜', '토피'],
-          },
-          {
-            key: 'creamy',
-            label: '크리미/우유 (Creamy)',
-            info: '바닐린과 다이아세틸이 크리미하고 버터리한 향을 만듭니다. 오크 리그닌이 분해되며 바닐라 향이 나오고, 발효·증류 중 생성되는 다이아세틸이 크림 같은 느낌을 줍니다.',
-            items: ['바닐라', '버터', '크림'],
-          },
-          {
-            key: 'green-apple',
-            label: '청사과향 (Green Apple)',
-            info: '에틸 헥사노에이트와 헥사날이 청사과 같은 상큼한 향을 주며, 발효 중 지방산에서 만들어지거나 산화 과정에서 형성됩니다.',
-            items: ['사과', '배'],
-          },
-          {
-            key: 'citrus',
-            label: '시트러스 (Citrus)',
-            info: '리모넨, 시트랄, 에틸 부티레이트 등이 감귤·레몬 같은 상큼함을 주며, 발효 효모의 차이 또는 진/IPA 캐스크 피니시로 강화됩니다.',
-            items: ['감귤', '레몬', '오렌지 껍질'],
-          },
-          {
-            key: 'tropical',
-            label: '바나나/열대과일 (Tropical Fruity)',
-            info: '이소아밀 아세테이트가 바나나·망고 향을 주며, 고온 발효나 특정 효모 사용 시 두드러집니다.',
-            items: ['바나나', '망고'],
-          },
-          {
-            key: 'dried-fruit',
-            label: '건과일/다크 과일 (Dried Fruit)',
-            info: '에틸 시네아메이트와 아세탈이 농축된 과일 풍미를 주며, 발효와 숙성 과정에서 산화와 농축으로 나타납니다.',
-            items: ['말린 자두', '무화과'],
-          },
-          {
-            key: 'red-fruit',
-            label: '붉은 계열 과일 (Red Fruit)',
-            info: '페닐에틸알코올과 벤질알코올이 체리·라즈베리 같은 붉은 과일 향을 내며, 발효 효모와 셰리 캐스크 숙성이 큰 영향을 줍니다.',
-            items: ['체리', '라즈베리'],
-          },
-          {
-            key: 'nutty',
-            label: '고소한 곡물/견과향 (Nutty/Cereal)',
-            info: '피라진과 퓨라놀 성분이 빵, 견과류 풍미를 만들며, 주로 킬닝 시 마이야르 반응이나 토스팅된 캐스크에서 생성됩니다.',
-            items: ['곡물', '빵', '견과류'],
-          },
-          {
-            key: 'woody',
-            label: '우디/탄닌 (Woody/Tannic)',
-            info: '탄닌과 쿠마린이 나무·가죽 같은 풍미를 내며, 오크통 숙성 중 리그닌·셀룰로오스 분해와 산화에 의해 형성됩니다.',
-            items: ['나무', '가죽'],
-          },
-          {
-            key: 'spicy',
-            label: '스파이시 (Spicy)',
-            info: '유게놀과 쿠마린이 향신료 느낌을 주며, 특히 유럽 오크 숙성 시 토스팅 강도에 따라 다양하게 변합니다.',
-            items: ['시나몬', '후추'],
-          },
-          {
-            key: 'herbal',
-            label: '허브/풀향 (Herbal/Grassy)',
-            info: '헥사날, 헥세놀이 신선한 풀 향을 내며, 발효 중 지방 성분이 산화될 때 주로 생성됩니다.',
-            items: ['허브', '풀'],
-          },
-          {
-            key: 'smoky',
-            label: '스모키 (Smoky)',
-            info: '구아이아콜, 4-메틸구아이아콜이 숯·그을음 향을 주며, 캐스크 차링이나 증류기 조건에 따라 강도가 달라집니다.',
-            items: ['숯', '그을음', '재'],
-          },
-          {
-            key: 'peaty',
-            label: '피트 (Peaty)',
-            info: '페놀, 크레졸, 티오페놀 등이 흙·바다·약품 같은 향을 내며, 몰트를 피트 연기로 건조할 때 흡착된 성분이 원인입니다.',
-            items: ['흙', '바다', '약품'],
-          },
-          {
-            key: 'dark-roasted',
-            label: '다크/로스티드 (Dark Roasted)',
-            info: '갈산, 산화 페놀 등이 다크 초콜릿·커피 풍미를 주며, 고온 킬닝과 장기 숙성에서 나타납니다.',
-            items: ['다크 초콜릿', '커피', '코코아'],
-          },
-          {
-            key: 'sulfur',
-            label: '황 향 (Sulfur)',
-            info: '황화수소, 디메틸설파이드(DMS) 등이 성냥불·고무 같은 향을 내며, 발효 스트레스·포트스틸 컷 미흡·셰리 캐스크 숙성에서 강화되기도 합니다. 일부는 결점이지만 개성으로 남기는 경우도 있습니다.',
-            items: ['성냥불', '고무', '화약'],
-          },
-        ].map(group => (
-          <FlavorGroupCard
-            key={group.key}
-            label={group.label}
-            info={group.info}
-            defaultOpen={group.key === 'herbal'}
-          >
-            {/* 펼쳤을 때 보이는 내부 UI: 타일 + (추후) 슬라이더/체크/메모 */}
-            <div className="grid grid-cols-2 gap-3">
-              {group.items.map(name => (
-                <ItemTile key={name} label={name} />
-              ))}
-            </div>
-          </FlavorGroupCard>
-        ))}
+      {/* 세부 향미 그룹 (드롭다운 카드) 왼쪽 오른쪽 나누어 독립적으로 작용*/}
+      <section className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* 왼쪽 컬럼 */}
+        <div className="flex flex-col gap-4">
+          {FLAVOR_GROUPS.filter((_, i) => i % 2 === 0).map(group => (
+            <FlavorGroupCard
+              key={group.key}
+              label={group.label}
+              info={group.info}
+              defaultOpen={group.key === 'herbal'}
+            >
+              <div className="grid grid-cols-2 gap-3">
+                {group.items.map(name => (
+                  <div
+                    key={name}
+                    className="rounded-md bg-white shadow-sm p-4 flex items-center justify-center"
+                  >
+                    <span className="text-xs text-brown-700">{name}</span>
+                  </div>
+                ))}
+              </div>
+            </FlavorGroupCard>
+          ))}
+        </div>
+
+        {/* 오른쪽 컬럼 */}
+        <div className="flex flex-col gap-4">
+          {FLAVOR_GROUPS.filter((_, i) => i % 2 === 1).map(group => (
+            <FlavorGroupCard
+              key={group.key}
+              label={group.label}
+              info={group.info}
+              defaultOpen={group.key === 'herbal'}
+            >
+              <div className="grid grid-cols-2 gap-3">
+                {group.items.map(name => (
+                  <div
+                    key={name}
+                    className="rounded-md bg-white shadow-sm p-4 flex items-center justify-center"
+                  >
+                    <span className="text-xs text-brown-700">{name}</span>
+                  </div>
+                ))}
+              </div>
+            </FlavorGroupCard>
+          ))}
+        </div>
       </section>
 
       {/* Comment */}
-      <section className="mb-2">
+      <section className="mb-2 mt-2">
         <label className="mb-1 block text-sm font-semibold text-brown-800">Comment</label>
         <textarea
           value={comment}
