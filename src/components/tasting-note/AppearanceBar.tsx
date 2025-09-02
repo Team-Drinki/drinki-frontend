@@ -15,55 +15,69 @@ const PALETTE: {
   baseHex: string;
   shades: { hex: string; label: string }[];
 }[] = [
+  // 1) Pale
   {
     key: 'pale',
     label: 'Pale',
-    baseHex: '#FFEFAE',
+    baseHex: '#FFFFFF',
     shades: [
-      { hex: '#FFF7E0', label: 'Pale Straw (옅은 짚색)' },
-      { hex: '#FFF0C8', label: 'Straw (짚색)' },
-      { hex: '#FFE9AF', label: 'Pale Gold (옅은 금색)' },
-      { hex: '#FFE297', label: 'Light Gold (연한 금색)' },
+      { hex: '#FFFFFF', label: 'Gin Clear (무색, 투명)' },
+      { hex: '#FEFCDD', label: 'White Wine (화이트 와인)' },
+      { hex: '#FEEE98', label: 'Pale Straw (옅은 짚색)' },
+      { hex: '#FBEA77', label: 'Pale Gold (옅은 금색)' },
     ],
   },
+
+  // 2) Straw
   {
     key: 'straw',
     label: 'Straw',
-    baseHex: '#F7D25C',
+    baseHex: '#FBE166',
     shades: [
-      { hex: '#FFDA7F', label: 'Gold (금색)' },
-      { hex: '#F7D25C', label: 'Deep Gold (짙은 금색)' },
-      { hex: '#F2C74A', label: 'Old Gold (올드 골드)' },
+      { hex: '#FBE166', label: 'Jonquil / Pale Corn (노랑 옥수수빛)' },
+      { hex: '#FADB56', label: 'Yellow Gold (노란 금색)' },
+      { hex: '#FAD54A', label: 'Old Gold (올드 골드)' },
+      { hex: '#FACD4B', label: 'Amber (호박색)' },
+      { hex: '#F7C751', label: 'Deep Gold (짙은 금색)' },
     ],
   },
+
+  // 3) Gold
   {
     key: 'gold',
     label: 'Gold',
-    baseHex: '#E29D2A',
+    baseHex: '#E79E13',
     shades: [
-      { hex: '#EABA38', label: 'Burnished Gold (광택 금색)' },
-      { hex: '#E29D2A', label: 'Amber (호박색)' },
-      { hex: '#D88426', label: 'Deep Amber (짙은 호박색)' },
+      { hex: '#F7C23B', label: 'Amontillado Sherry (아몬틸라도 셰리)' },
+      { hex: '#F3BD33', label: 'Deep Copper (짙은 구리)' },
+      { hex: '#EBAD07', label: 'Burnished (광택 구리/금속)' },
+      { hex: '#E79E13', label: 'Chestnut / Oloroso Sherry (밤빛/올로로소 셰리)' },
     ],
   },
+
+  // 4) Amber
   {
     key: 'amber',
     label: 'Amber',
-    baseHex: '#C15A2C',
+    baseHex: '#CC502E',
     shades: [
-      { hex: '#CF6B2C', label: 'Burnished Copper (광택 구리색)' },
-      { hex: '#C4552E', label: 'Copper (구리색)' },
-      { hex: '#B4442F', label: 'Russet / Chestnut (밤빛 갈색)' },
+      { hex: '#E59403', label: 'Russet / Muscat (적갈색/머스캣)' },
+      { hex: '#DD7317', label: 'Tawny (토니 포트색)' },
+      { hex: '#E26529', label: 'Auburn / Polished Mahogany (적갈 마호가니)' },
+      { hex: '#CC502E', label: 'Mahogany (마호가니)' },
     ],
   },
+
+  // 5) Mahogany
   {
     key: 'mahogany',
     label: 'Mahogany',
-    baseHex: '#5F2B22',
+    baseHex: '#702C1D',
     shades: [
-      { hex: '#9F372D', label: 'Mahogany (마호가니)' },
-      { hex: '#7A2D26', label: 'Old Oak (올드 오크)' },
-      { hex: '#4A1E1A', label: 'Treacle (당밀색/매우 진한 갈색)' },
+      { hex: '#B22E29', label: 'Fenna Notes (흙내/페놀틱 노트)' },
+      { hex: '#9A251E', label: 'Burnt Timber (탄 나무)' },
+      { hex: '#702C1D', label: 'Old Oak (올드 오크)' },
+      { hex: '#421C0B', label: 'Brown Sherry / Treacle (진한 셰리/당밀)' },
     ],
   },
 ];
@@ -110,7 +124,7 @@ const SEGMENT_INDEX: Record<AppearanceColor, { start: number; end: number; rep: 
   return map;
 })();
 
-/** 전역 인덱스 -> 해당하는 5범주 키 */
+/* 전역 인덱스 -> 해당하는 5범주 키 */
 function binOfIndex(globalIdx: number): AppearanceColor {
   for (const seg of PALETTE) {
     const { start, end } = SEGMENT_INDEX[seg.key];
@@ -119,7 +133,7 @@ function binOfIndex(globalIdx: number): AppearanceColor {
   return 'gold';
 }
 
-/** 5범주 키 -> 대표 인덱스(가운데 칸) */
+/* 5범주 키 -> 대표 인덱스(가운데 칸) */
 function representativeIndexOfBin(key: AppearanceColor): number {
   return SEGMENT_INDEX[key].rep;
 }
@@ -167,7 +181,7 @@ export default function AppearanceBar({
   return (
     <div className={`w-full ${className}`}>
       <div
-        className="w-full h-6 sm:h-7 md:h-8 rounded-full overflow-hidden border border-gray-300 bg-white"
+        className="w-full h-6 sm:h-7 md:h-8 rounded-none overflow-hidden border border-gray-300 bg-white"
         role="radiogroup"
         aria-label="Appearance"
       >
@@ -189,7 +203,7 @@ export default function AppearanceBar({
                     style={{
                       backgroundColor: s.hex,
 
-                      boxShadow: isSelected ? 'inset 0 0 0 3px #000' : undefined,
+                      boxShadow: isSelected ? 'inset 0 0 0 2px #301700ff' : undefined,
                     }}
                     title={s.label}
                   />

@@ -65,7 +65,6 @@ export default function FlavorSelector({
   onChange: (v: FlavorGroupSelection) => void;
 }) {
   const [tab, setTab] = useState<FlavorGroup>('Aroma');
-  const cols = Math.ceil(VOCABS[tab].length / 2);
   const setScore = (group: FlavorGroup, label: string, score: number) => {
     const next = { ...value, [group]: { ...(value[group] || {}) } };
     if (score <= 0) delete next[group][label];

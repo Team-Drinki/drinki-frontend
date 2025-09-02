@@ -13,6 +13,17 @@ import FlavorSelector, {
 } from '@/components/tasting-note/FlavorSelector';
 import FlavorGroupCard from '@/components/tasting-note/FlavorGroupCard';
 import { FLAVOR_GROUPS } from '@/components/tasting-note/FlavorGroups';
+import IntensityPopover from '@/components/tasting-note/IntensityPopover';
+
+import { Search } from 'lucide-react';
+
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select';
 
 type WhiskyMeta = {
   name: string;
@@ -23,19 +34,13 @@ type WhiskyMeta = {
   date: string;
 };
 
-const APPEARANCE_COLORS = [
-  { key: 'pale', hex: '#FFEFAE', label: 'Pale' },
-  { key: 'straw', hex: '#F7D25C', label: 'Straw' },
-  { key: 'gold', hex: '#E29D2A', label: 'Gold' },
-  { key: 'amber', hex: '#C15A2C', label: 'Amber' },
-  { key: 'mahogany', hex: '#5F2B22', label: 'Mahogany' },
-] as const;
-
 export default function TastingNoteWritePage() {
+  const [catOpen, setCatOpen] = useState(false); // ▼/▲ 토글용
   const [images, setImages] = useState<File[]>([]);
   const [mode, setMode] = useState<'beginner' | 'expert'>('beginner');
   const [keyword, setKeyword] = useState('');
   const [title, setTitle] = useState('');
+  const [boardCategory, setBoardCategory] = useState('');
   const [whisky, setWhisky] = useState<WhiskyMeta>({
     name: '',
     abv: '',
@@ -48,30 +53,12 @@ export default function TastingNoteWritePage() {
   const [appearance, setAppearance] = useState<AppearanceColor | null>(null);
   const [comment, setComment] = useState('');
   const [intensityMap, setIntensityMap] = useState<Record<string, number>>({});
-  const handleSelectFlavor = (flavorId: string) => {
-    setIntensityMap(prev => ({ ...prev, [flavorId]: 2.5 }));
-  };
-  const handleDeselectFlavor = (flavorId: string) => {
-    setIntensityMap(prev => {
-      const newMap = { ...prev };
-      delete newMap[flavorId];
-      return newMap;
-    });
-  };
-
-  const handleIntensityChange = (flavorId: string, value: number) => {
-    setIntensityMap(prev => ({ ...prev, [flavorId]: value }));
-  };
 
   const [flavors, setFlavors] = useState<FlavorGroupSelection>({
     Aroma: {},
     Palate: {},
     Finish: {},
   });
-
-  const handleSelect = (flavorId: string) => {
-    setIntensityMap(prev => ({ ...prev, [flavorId]: 2.5 }));
-  };
 
   const handleSubmit = () => {
     console.log('tasting-note submit', {
@@ -103,20 +90,65 @@ export default function TastingNoteWritePage() {
 
         <div className="mx-auto max-w-5xl">
           {/* 상단 컨트롤 */}
-          <div className="bg-yellow-100 border border-yellow-200 p-6 rounded-lg shadow-sm">
-            <div className="grid grid-cols-1 gap-4">
-              <div>
+          <div className="bg-[#FFECA9] border border-[#FFECA9] p-6 rounded-lg shadow-sm">
+            <div className="grid grid-cols-12 gap-4">
+              {/* 드롭다운 (게시판 주제 선택) */}
+              <div className="col-span-12">
+                <Select
+                  value={boardCategory || undefined}
+                  onValueChange={v => setBoardCategory(v)}
+                  onOpenChange={setCatOpen}
+                >
+                  <SelectTrigger
+                    className="
+                      w-auto
+                      h-6
+                      bg-transparent
+                      border-0
+                      border-b-2 border-[#402002]
+                      rounded-none
+                      shadow-none
+                      px-0
+                      text-brown-900 font-semibold
+                      justify-start
+                      focus:ring-0 focus:outline-none focus-visible:ring-0
+                      [&>svg]:hidden   /* shadcn 기본 chevron 숨기기 */
+                    "
+                  >
+                    <span className="flex items-center gap-2">
+                      <SelectValue placeholder="게시판 주제 선택" />
+                      <span className="text-[#402002] text-sm leading-none">
+                        {catOpen ? '▲' : '▼'}
+                      </span>
+                    </span>
+                  </SelectTrigger>
+
+                  <SelectContent>
+                    <SelectItem value="위스키">위스키</SelectItem>
+                    <SelectItem value="와인">와인</SelectItem>
+                    <SelectItem value="기타">기타</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 술 이름 검색 */}
+              <div className="col-span-12 md:col-span-9">
                 <label className="block text-sm font-medium text-brown-800 mb-2">
                   술 이름 검색
                 </label>
-                <Input
-                  placeholder="술 이름을 검색해주세요 (아직 미구현)"
-                  value={keyword}
-                  onChange={e => setKeyword(e.target.value)}
-                  className="w-full bg-white border-brown-200 focus:border-brown-400"
-                />
+                <div className="relative">
+                  <Input
+                    placeholder="술 이름을 검색해주세요 (아직 미구현)"
+                    value={keyword}
+                    onChange={e => setKeyword(e.target.value)}
+                    className="w-full bg-white border-brown-200 focus:border-brown-400 pr-10"
+                  />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brown-700" />
+                </div>
               </div>
-              <div>
+
+              {/* 제목: 전체폭 */}
+              <div className="col-span-12">
                 <label className="block text-sm font-medium text-brown-800 mb-2">제목</label>
                 <Input
                   placeholder="제목을 입력해주세요"
@@ -188,6 +220,8 @@ export default function TastingNoteWritePage() {
                 setFlavors={setFlavors}
                 comment={comment}
                 setComment={setComment}
+                intensityMap={intensityMap}
+                setIntensityMap={setIntensityMap}
               />
             )}
           </div>
@@ -314,6 +348,8 @@ function ExpertForm(props: {
   setFlavors: (f: FlavorGroupSelection) => void;
   comment: string;
   setComment: (s: string) => void;
+  intensityMap: Record<string, number>;
+  setIntensityMap: (m: Record<string, number>) => void;
 }) {
   const {
     images,
@@ -324,10 +360,10 @@ function ExpertForm(props: {
     setRating,
     appearance,
     setAppearance,
-    flavors,
-    setFlavors,
     comment,
     setComment,
+    intensityMap,
+    setIntensityMap,
   } = props;
 
   return (
@@ -388,12 +424,17 @@ function ExpertForm(props: {
             >
               <div className="grid grid-cols-2 gap-3">
                 {group.items.map(name => (
-                  <div
+                  <ExpertFlavorItem
                     key={name}
-                    className="rounded-md bg-white shadow-sm p-4 flex items-center justify-center"
-                  >
-                    <span className="text-xs text-brown-700">{name}</span>
-                  </div>
+                    label={name}
+                    score={intensityMap[name] ?? 0}
+                    onChange={(s: number) => {
+                      const next = { ...intensityMap };
+                      if (s <= 0) delete next[name];
+                      else next[name] = s;
+                      setIntensityMap(next);
+                    }}
+                  />
                 ))}
               </div>
             </FlavorGroupCard>
@@ -411,12 +452,17 @@ function ExpertForm(props: {
             >
               <div className="grid grid-cols-2 gap-3">
                 {group.items.map(name => (
-                  <div
+                  <ExpertFlavorItem
                     key={name}
-                    className="rounded-md bg-white shadow-sm p-4 flex items-center justify-center"
-                  >
-                    <span className="text-xs text-brown-700">{name}</span>
-                  </div>
+                    label={name}
+                    score={intensityMap[name] ?? 0}
+                    onChange={(s: number) => {
+                      const next = { ...intensityMap };
+                      if (s <= 0) delete next[name];
+                      else next[name] = s;
+                      setIntensityMap(next);
+                    }}
+                  />
                 ))}
               </div>
             </FlavorGroupCard>
@@ -460,10 +506,70 @@ function Field({
   );
 }
 
-function ItemTile({ label }: { label: string }) {
-  return (
-    <div className="rounded-md bg-white shadow-sm p-4 flex items-center justify-center">
-      <span className="text-xs text-brown-700">{label}</span>
+function ExpertFlavorItem({
+  label,
+  score,
+  onChange,
+}: {
+  label: string;
+  score: number; // 0~5
+  onChange: (s: number) => void;
+}) {
+  // 선택 상태에 따른 스타일
+  const isActive = score > 0;
+  const baseClass =
+    'relative flex items-center justify-center rounded-md border shadow-sm p-3 text-xs transition select-none';
+  const stateClass = isActive
+    ? 'border-[#402002]'
+    : 'bg-white border-brown-200 hover:border-amber-400';
+
+  // 클릭 시 토글(선택 기본값 2.5)
+  const toggle = () => onChange(isActive ? 0 : 2.5);
+
+  const Tile = (
+    <div
+      role="button"
+      tabIndex={0}
+      onClick={toggle}
+      className={`${baseClass} ${stateClass}`}
+      style={{
+        backgroundColor: isActive ? '#FFD445' : undefined,
+        boxShadow: isActive ? 'inset 0 0 0 2px #402002' : undefined,
+      }}
+    >
+      <span className="text-brown-800">{label}</span>
+
+      {isActive && (
+        <>
+          <span className="absolute bottom-1 left-1 rounded-md bg-white/95 px-1.5 text-[10px] font-semibold">
+            {score.toFixed(1)}
+          </span>
+          <button
+            type="button"
+            className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-[10px] shadow"
+            onClick={e => {
+              e.stopPropagation(); // 부모 토글/아코디언 방지
+              onChange(0);
+            }}
+            aria-label="remove"
+          >
+            ✕
+          </button>
+        </>
+      )}
     </div>
+  );
+
+  // IntensityPopover 적용 (asChild로 타일 자체를 트리거로)
+  return (
+    <IntensityPopover
+      label={`${label} 강도 조절`}
+      value={score}
+      onChange={v => onChange(Math.max(0, Math.min(5, v)))}
+      width={240}
+      asChild
+    >
+      {Tile}
+    </IntensityPopover>
   );
 }
