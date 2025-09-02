@@ -11,6 +11,7 @@ import AppearanceBar, { type AppearanceColor } from '@/components/tasting-note/A
 import FlavorSelector, {
   type FlavorGroupSelection,
 } from '@/components/tasting-note/FlavorSelector';
+import IntensityPopover from '@/components/tasting-note/IntensityPopover';
 
 type WhiskyMeta = {
   name: string;
@@ -45,11 +46,31 @@ export default function TastingNoteWritePage() {
   const [rating, setRating] = useState(0);
   const [appearance, setAppearance] = useState<AppearanceColor | null>(null);
   const [comment, setComment] = useState('');
+  const [intensityMap, setIntensityMap] = useState<Record<string, number>>({});
+  const handleSelectFlavor = (flavorId: string) => {
+    setIntensityMap(prev => ({ ...prev, [flavorId]: 2.5 }));
+  };
+  const handleDeselectFlavor = (flavorId: string) => {
+    setIntensityMap(prev => {
+      const newMap = { ...prev };
+      delete newMap[flavorId];
+      return newMap;
+    });
+  };
+
+  const handleIntensityChange = (flavorId: string, value: number) => {
+    setIntensityMap(prev => ({ ...prev, [flavorId]: value }));
+  };
+
   const [flavors, setFlavors] = useState<FlavorGroupSelection>({
     Aroma: {},
     Palate: {},
     Finish: {},
   });
+
+  const handleSelect = (flavorId: string) => {
+    setIntensityMap(prev => ({ ...prev, [flavorId]: 2.5 }));
+  };
 
   const handleSubmit = () => {
     console.log('tasting-note submit', {
@@ -60,6 +81,7 @@ export default function TastingNoteWritePage() {
       rating,
       appearance,
       comment,
+      flavors,
     });
     alert('임시 저장: 콘솔에서 제출 페이로드 확인 가능');
   };
@@ -354,11 +376,15 @@ function ExpertForm(props: {
 
       {/* 세부 향미 그룹 (자리만) */}
       <section className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 예: 각 카드에 슬라이더/체크/메모 들어감 */}
         {[
           '은은한 단맛 (Natural Sweet)',
           '카라멜 단맛 (Caramelized)',
+          '크리미/우유(Creamy)',
+          '청사과향(Green Apple)',
           '시트러스 (Citrus)',
+          '열대과일 (Tropical Fruity)',
+          '건과일 (Dried Fruit)',
+          '붉은 계열 과일 (Red Fruit)',
           '고소한 곡물/견과향 (Nutty/Cereal)',
           '우디/탄닌 (Woody/Tannic)',
           '스파이시 (Spicy)',
@@ -366,7 +392,6 @@ function ExpertForm(props: {
           '스모키 (Smoky)',
           '피트 (Peaty)',
           '다크/로스티드 (Dark Roasted)',
-          '레드 프룻 (Red Fruits)',
           '황 향 (Sulfur)',
         ].map(label => (
           <div key={label} className="rounded-md border border-gray-200 bg-gray-100 p-4 shadow-sm">

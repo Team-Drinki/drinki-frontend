@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import IntensityPopover from '@/components/tasting-note/IntensityPopover';
 
 export type FlavorGroup = 'Aroma' | 'Palate' | 'Finish';
 export type FlavorGroupSelection = Record<FlavorGroup, Record<string, number>>;
@@ -114,85 +115,54 @@ function FlavorTile({
   onChange,
 }: {
   label: string;
-  score: number; // 0~5 (0.5 step)
+  score: number; // 0~5
   onChange: (s: number) => void;
 }) {
-  const [showBubble, setShowBubble] = useState(false);
-
   const stateClass = useMemo(() => {
-    if (score > 0) return 'bg-amber-300 border-amber-400';
-    return 'bg-white border-brown-200 hover:border-amber-400';
+    return score > 0
+      ? 'bg-amber-300 border-amber-400'
+      : 'bg-white border-brown-200 hover:border-amber-400';
   }, [score]);
 
-  const setHalfStep = (n: number) => Math.max(0, Math.min(5, Math.round(n * 2) / 2));
-
-  const toggleBubble = () => setShowBubble(v => !v);
-  const keyToggle: React.KeyboardEventHandler<HTMLDivElement> = e => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      toggleBubble();
-    }
-  };
+  // 클릭 시 선택/해제 토글(선택 시 기본값 2.5)
+  const toggleSelect = () => (score > 0 ? onChange(0) : onChange(2.5));
 
   return (
-    <div className="relative" onMouseLeave={() => setShowBubble(false)}>
-      <div
-        role="button"
-        tabIndex={0}
-        aria-expanded={showBubble}
-        aria-label={`${label} intensity`}
-        onClick={toggleBubble}
-        onKeyDown={keyToggle}
-        className={`group h-20 w-full rounded-lg border text-sm text-brown-800 transition ${stateClass}`}
-      >
-        <span className="px-3">{label}</span>
+    <IntensityPopover
+      label={`${label} 강도 조절`}
+      value={score}
+      onChange={v => onChange(Math.max(0, Math.min(5, v)))}
+      asChild
+    >
+      <div className="relative">
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={toggleSelect} // 팝업 열리면서 선택 토글
+          className={`group h-20 w-full rounded-lg border text-sm text-brown-800 transition ${stateClass}`}
+        >
+          <span className="px-3">{label}</span>
 
-        {/* 선택 배지 & 제거 버튼 */}
-        {score > 0 && (
-          <>
-            <span className="absolute bottom-1 left-1 rounded-md bg-white px-1.5 text-xs font-semibold">
-              {score.toFixed(1)}
-            </span>
-            <button
-              type="button"
-              className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-xs shadow"
-              onClick={e => {
-                e.stopPropagation();
-                onChange(0);
-              }}
-              aria-label="remove"
-            >
-              ✕
-            </button>
-          </>
-        )}
-      </div>
-
-      {/* Active 상태: 버블(슬라이더) */}
-      {showBubble && (
-        <div className="absolute left-1/2 z-20 -translate-x-1/2 -top-24 w-48 rounded-2xl border border-brown-300 bg-white p-3 shadow-md">
-          <div className="mb-2 text-xs text-brown-800">강도 (0.0–5.0)</div>
-          <input
-            type="range"
-            min={0}
-            max={5}
-            step={0.5}
-            value={score}
-            onChange={e => onChange(setHalfStep(Number(e.target.value)))}
-            className="w-full"
-          />
-          <div className="mt-1 text-right text-sm font-semibold text-brown-800">
-            {score.toFixed(1)}
-          </div>
-
-          {/* 말풍선 꼬리 */}
-          <div className="absolute -bottom-2 left-1/2 h-0 w-0 -translate-x-1/2 border-x-8 border-t-8 border-x-transparent border-t-white" />
-          <div
-            className="absolute -bottom-[9px] left-1/2 h-0 w-0 -translate-x-1/2 border-x-9 border-t-9 border-x-transparent border-t-brown-300/60"
-            aria-hidden
-          />
+          {score > 0 && (
+            <>
+              <span className="absolute bottom-1 left-1 rounded-md bg-white px-1.5 text-xs font-semibold">
+                {score.toFixed(1)}
+              </span>
+              <button
+                type="button"
+                className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-xs shadow"
+                onClick={e => {
+                  e.stopPropagation();
+                  onChange(0);
+                }}
+                aria-label="remove"
+              >
+                ✕
+              </button>
+            </>
+          )}
         </div>
-      )}
-    </div>
+      </div>
+    </IntensityPopover>
   );
 }
