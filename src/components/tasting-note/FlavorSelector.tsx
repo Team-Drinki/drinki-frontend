@@ -132,6 +132,7 @@ function FlavorTile({
       label={`${label} 강도 조절`}
       value={score}
       onChange={v => onChange(Math.max(0, Math.min(5, v)))}
+      width={260}
       asChild
     >
       <div className="relative">
