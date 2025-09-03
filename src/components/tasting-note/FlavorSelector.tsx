@@ -82,8 +82,8 @@ export default function FlavorSelector({
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`rounded-full px-3 py-1 text-sm transition
-                ${active ? 'bg-amber-400 text-brown-900' : 'bg-white text-brown-700 border border-brown-200'}`}
+              className={`rounded-lg px-3 py-1 text-sm transition
+                ${active ? 'bg-amber-400 text-[#653205] font-semibold' : 'bg-white text-[#653205] border border-brown-200 font-semibold'}`}
             >
               {t}
             </button>

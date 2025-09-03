@@ -1,3 +1,9 @@
+/* expert version FlavorSelector components  
+key : category 
+info : 주 생성 공정 
+items : icons => 후에 교체 예정
+*/
+
 export const FLAVOR_GROUPS = [
   {
     key: 'natural-sweet',

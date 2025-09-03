@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, type Dispatch, type SetStateAction } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft } from 'lucide-react';
@@ -52,7 +52,6 @@ export default function TastingNoteWritePage() {
   const [rating, setRating] = useState(0);
   const [appearance, setAppearance] = useState<AppearanceColor | null>(null);
   const [comment, setComment] = useState('');
-  const [intensityMap, setIntensityMap] = useState<Record<string, number>>({});
 
   const [flavors, setFlavors] = useState<FlavorGroupSelection>({
     Aroma: {},
@@ -220,8 +219,6 @@ export default function TastingNoteWritePage() {
                 setFlavors={setFlavors}
                 comment={comment}
                 setComment={setComment}
-                intensityMap={intensityMap}
-                setIntensityMap={setIntensityMap}
               />
             )}
           </div>
@@ -251,7 +248,7 @@ function BeginnerForm(props: {
   appearance: AppearanceColor | null;
   setAppearance: (c: AppearanceColor | null) => void;
   flavors: FlavorGroupSelection;
-  setFlavors: (f: FlavorGroupSelection) => void;
+  setFlavors: Dispatch<SetStateAction<FlavorGroupSelection>>;
   comment: string;
   setComment: (s: string) => void;
 }) {
@@ -345,11 +342,9 @@ function ExpertForm(props: {
   appearance: AppearanceColor | null;
   setAppearance: (c: AppearanceColor | null) => void;
   flavors: FlavorGroupSelection;
-  setFlavors: (f: FlavorGroupSelection) => void;
+  setFlavors: Dispatch<SetStateAction<FlavorGroupSelection>>;
   comment: string;
   setComment: (s: string) => void;
-  intensityMap: Record<string, number>;
-  setIntensityMap: (m: Record<string, number>) => void;
 }) {
   const {
     images,
@@ -360,11 +355,21 @@ function ExpertForm(props: {
     setRating,
     appearance,
     setAppearance,
+    flavors,
+    setFlavors,
     comment,
     setComment,
-    intensityMap,
-    setIntensityMap,
   } = props;
+  const [tab, setTab] = useState<'Aroma' | 'Palate' | 'Finish'>('Aroma');
+
+  const setScoreOnCurrentTab = (label: string, score: number) => {
+    setFlavors((prev: FlavorGroupSelection) => {
+      const next = { ...prev, [tab]: { ...(prev[tab] || {}) } };
+      if (score <= 0) delete next[tab][label];
+      else next[tab][label] = score;
+      return next;
+    });
+  };
 
   return (
     <div className="rounded-lg bg-gray-100 p-6">
@@ -411,57 +416,57 @@ function ExpertForm(props: {
         <AppearanceBar value={appearance} onChange={setAppearance} detailed />
       </section>
 
-      {/* 세부 향미 그룹 (드롭다운 카드) 왼쪽 오른쪽 나누어 독립적으로 작용*/}
+      {/*Aroma, Palate, Finish button*/}
+      <div className="mb-3 flex gap-2">
+        {(['Aroma', 'Palate', 'Finish'] as const).map(t => {
+          const active = tab === t;
+          return (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={`rounded-lg px-3 py-1 text-sm transition
+                ${
+                  active
+                    ? 'bg-amber-400 text-[#653205] font-semibold'
+                    : 'bg-white text-[#653205] border border-brown-200 font-semibold'
+                }`}
+            >
+              {t}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* 세부 향미 그룹 (드롭다운 카드) 왼쪽 오른쪽 나누어 독립적으로 작용 */}
+      {/* 왼쪽 컬럼 */}
       <section className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* 왼쪽 컬럼 */}
         <div className="flex flex-col gap-4">
           {FLAVOR_GROUPS.filter((_, i) => i % 2 === 0).map(group => (
-            <FlavorGroupCard
-              key={group.key}
-              label={group.label}
-              info={group.info}
-              defaultOpen={group.key === 'herbal'}
-            >
+            <FlavorGroupCard key={group.key} label={group.label} info={group.info}>
               <div className="grid grid-cols-2 gap-3">
                 {group.items.map(name => (
                   <ExpertFlavorItem
                     key={name}
                     label={name}
-                    score={intensityMap[name] ?? 0}
-                    onChange={(s: number) => {
-                      const next = { ...intensityMap };
-                      if (s <= 0) delete next[name];
-                      else next[name] = s;
-                      setIntensityMap(next);
-                    }}
+                    score={flavors[tab]?.[name] ?? 0}
+                    onChange={(s: number) => setScoreOnCurrentTab(name, s)}
                   />
                 ))}
               </div>
             </FlavorGroupCard>
           ))}
         </div>
-
-        {/* 오른쪽 컬럼 */}
         <div className="flex flex-col gap-4">
           {FLAVOR_GROUPS.filter((_, i) => i % 2 === 1).map(group => (
-            <FlavorGroupCard
-              key={group.key}
-              label={group.label}
-              info={group.info}
-              defaultOpen={group.key === 'herbal'}
-            >
+            <FlavorGroupCard key={group.key} label={group.label} info={group.info}>
               <div className="grid grid-cols-2 gap-3">
                 {group.items.map(name => (
                   <ExpertFlavorItem
                     key={name}
                     label={name}
-                    score={intensityMap[name] ?? 0}
-                    onChange={(s: number) => {
-                      const next = { ...intensityMap };
-                      if (s <= 0) delete next[name];
-                      else next[name] = s;
-                      setIntensityMap(next);
-                    }}
+                    score={flavors[tab]?.[name] ?? 0}
+                    onChange={(s: number) => setScoreOnCurrentTab(name, s)}
                   />
                 ))}
               </div>
