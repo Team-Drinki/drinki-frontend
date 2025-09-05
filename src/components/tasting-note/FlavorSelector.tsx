@@ -6,6 +6,7 @@ import IntensityPopover from '@/components/tasting-note/IntensityPopover';
 export type FlavorGroup = 'Aroma' | 'Palate' | 'Finish';
 export type FlavorGroupSelection = Record<FlavorGroup, Record<string, number>>;
 
+// beginner
 const VOCABS: Record<FlavorGroup, string[]> = {
   Aroma: [
     '꿀,설탕,시럽',

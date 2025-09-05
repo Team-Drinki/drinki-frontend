@@ -104,7 +104,7 @@ const FLAT_SHADES = (() => {
   return out;
 })();
 
-/**
+/*
  * SEGMENT_INDEX: 각 5범주가 차지하는 전역 인덱스 구간과 대표 인덱스(가운데 값)
  * - start/end: FLAT_SHADES에서의 시작/끝 인덱스
  * - rep: 시각적 강조에 사용할 대표 인덱스(가운데)
