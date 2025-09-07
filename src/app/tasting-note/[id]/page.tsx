@@ -2,18 +2,11 @@ import BackButton from '@/components/common/BackButton';
 import { tastingNoteDetail } from '@/app/mockup';
 import PostTitle from '@/components/common/PostTitle';
 import { toAlcoholLabel } from '@/utils/alcoholTypeConvertor';
-import Image from 'next/image';
 import Rating from '@/components/common/Rating';
 import CommentSection from '@/components/comment/CommentSection';
-import {
-  Carousel,
-  CarouselContent,
-  CarouselItem,
-  CarouselPrevious,
-  CarouselNext,
-} from '@/components/ui/carousel';
 import AppearanceBar from '@/components/tasting-note/AppearanceBar';
 import { FlavorTile } from '@/components/tasting-note/FlavorSelector';
+import ImageGallery from '@/components/ImageGallery';
 
 export default function TastingNoteDetailPage() {
   const data = tastingNoteDetail[0];
@@ -30,23 +23,8 @@ export default function TastingNoteDetailPage() {
         views={data.views}
       />
       <div className="flex flex-col gap-9">
-        <Carousel className="w-full">
-          <CarouselContent>
-            {data.content.images.map((image, index) => (
-              <CarouselItem key={index} className="relative md:basis-1/2 lg:basis-1/3">
-                <div className="h-100 relative">
-                  <Image src={image} alt={`tasting-note-${index}`} fill className="object-cover" />
-                </div>
-              </CarouselItem>
-            ))}
-          </CarouselContent>
-          {data.content.images?.length > 3 && (
-            <>
-              <CarouselPrevious className="-left-10" />
-              <CarouselNext className="-right-10" />
-            </>
-          )}
-        </Carousel>
+        {/* Image Gallery */}
+        <ImageGallery images={data.content.images} />
 
         <dl className="flex flex-col gap-9 px-5">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6 ">
