@@ -114,7 +114,7 @@ export const communityPostsDetail = [
     content: '글렌피딕 붐따~',
   },
 ];
-
+import { AppearanceColor } from '@/components/tasting-note/AppearanceBar';
 export const tastingNoteDetail = [
   {
     id: '1',
@@ -140,7 +140,7 @@ export const tastingNoteDetail = [
       tasteDate: '2024.07.21',
       type: '위스키',
       region: '스코틀랜드',
-      appearance: 14,
+      appearance: 'gold' as AppearanceColor,
       aroma: [
         { name: '카라멜', value: 2.5 },
         { name: '바닐라', value: 3.5 },

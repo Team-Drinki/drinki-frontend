@@ -12,6 +12,8 @@ import {
   CarouselPrevious,
   CarouselNext,
 } from '@/components/ui/carousel';
+import AppearanceBar from '@/components/tasting-note/AppearanceBar';
+import { FlavorTile } from '@/components/tasting-note/FlavorSelector';
 
 export default function TastingNoteDetailPage() {
   const data = tastingNoteDetail[0];
@@ -88,10 +90,46 @@ export default function TastingNoteDetailPage() {
             </div>
           </div>
 
+          {/* Appearance */}
           <dt className="text-head5 text-black">Appearance(외관)</dt>
-          <dt className="text-head5 text-black">Aroma(향)</dt>
-          <dt className="text-head5 text-black">Palate(맛)</dt>
-          <dt className="text-head5 text-black">Finish(피니시)</dt>
+          {data.noteType === 'beginner' ? (
+            <div className="w-full">
+              <AppearanceBar value={data.content.appearance} detailed={false} showLabel={false} />
+            </div>
+          ) : (
+            <div className="w-full">
+              <AppearanceBar value={data.content.appearance} detailed showLabel={false} />
+            </div>
+          )}
+
+          {/* Aroma, Palate, Finish */}
+          <div className="flex flex-col gap-3">
+            <dt className="text-head5 text-black">Aroma(향)</dt>
+            <dd className="flex gap-4">
+              {data.content.aroma.map(f => (
+                <FlavorTile key={f.name} label={f.name} score={f.value} className="w-32" />
+              ))}
+            </dd>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <dt className="text-head5 text-black">Palate(맛)</dt>
+            <dd className="flex gap-4">
+              {data.content.palate.map(f => (
+                <FlavorTile key={f.name} label={f.name} score={f.value} className="w-32" />
+              ))}
+            </dd>
+          </div>
+
+          <div className="flex flex-col gap-3">
+            <dt className="text-head5 text-black">Finish(피니시)</dt>
+            <dd className="flex gap-4">
+              {data.content.finish.map(f => (
+                <FlavorTile key={f.name} label={f.name} score={f.value} className="w-32" />
+              ))}
+            </dd>
+          </div>
+          {/* Comment */}
           <div>
             <dt className="text-head5 text-black">Comment</dt>
             <dd className="text-body1 text-black whitespace-pre-wrap">{data.content.comment}</dd>
