@@ -24,7 +24,12 @@ export default function FlavorGroupCard({
     <Collapsible
       open={open}
       onOpenChange={setOpen}
-      className="w-full rounded-xl border border-brown-200 bg-amber-50/60"
+      className={
+        // 기본은 흰색, 펼쳐지면 배경/테두리만 바꿈
+        `w-full rounded-xl border transition
+         bg-white border-brown-200
+         data-[state=open]:bg-[#FFF8E4] data-[state=open]:border-brown-300`
+      }
     >
       {/* 헤더 */}
       <div className="flex items-center justify-between px-3 pt-3">

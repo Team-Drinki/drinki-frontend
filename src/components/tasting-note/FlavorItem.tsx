@@ -37,7 +37,7 @@ export default function FlavorItem({
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <div className="relative flex flex-col items-center justify-center h-24 rounded-lg bg-yellow-400 cursor-pointer text-sm text-yellow-900 font-semibold p-2 border-2 border-yellow-500">
+        <div className="relative flex flex-col items-center justify-center h-24 rounded-lg bg-[#FFF8E4] cursor-pointer text-sm text-brown-900 font-semibold p-2 border-2 border-amber-400">
           <button
             type="button"
             onClick={e => {

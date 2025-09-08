@@ -120,7 +120,7 @@ function FlavorTile({
 }) {
   const stateClass = useMemo(() => {
     return score > 0
-      ? 'bg-amber-300 border-amber-400'
+      ? 'bg-[#FFF8E4] border-amber-400'
       : 'bg-white border-brown-200 hover:border-amber-400';
   }, [score]);
 
