@@ -6,10 +6,12 @@ import NewPost from '@/components/svg/NewPost';
 import DrinkCard from '@/components/common/DrinkCard';
 import PostsPagination from '@/components/common/PostsPagination';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function CommunityPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const totalPages = 10;
+  const router = useRouter();
 
   const mockDrinks = Array.from({ length: 9 }, (_, i) => ({
     title: `위스키 ${i + 1}에 대한 이야기`,
@@ -36,7 +38,10 @@ export default function CommunityPage() {
               질문
             </CustomButton>
           </div>
-          <CustomButton className="flex border-2 border-brown text-brown rounded-[8px] bg-transparent flex-row items-center py-2.5 px-4.5 gap-[9px]">
+          <CustomButton
+            onClick={() => router.push('/community/write')}
+            className="flex border-2 border-brown text-brown rounded-[8px] bg-transparent flex-row items-center py-2.5 px-4.5 gap-[9px]"
+          >
             <NewPost className="size-6 text-brown" />새 글 쓰기
           </CustomButton>
         </div>
