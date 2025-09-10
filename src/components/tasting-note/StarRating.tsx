@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-
+import StarIcon from '../svg/StarIcon';
 type Props = {
   value: number; // 0 ~ max
   onChange: (v: number) => void; // 반단위(0.5)로 콜백
@@ -57,10 +57,10 @@ export default function StarRating({
             aria-label={`${idx} star`}
           >
             {/* 회색 베이스 */}
-            <StarSVG size={size} className="text-gray-300" />
+            <StarIcon size={size} className="text-gray-300" />
             {/* 채워진 부분(퍼센트만큼 가림) */}
             <div className="absolute inset-0 overflow-hidden" style={{ width: `${fillPercent}%` }}>
-              <StarSVG size={size} className="text-yellow-400" />
+              <StarIcon size={size} className="text-yellow-400" />
             </div>
 
             {/* 인터랙션 히트영역: 반씩 쪼개기 */}
@@ -93,17 +93,5 @@ export default function StarRating({
         {value}/{max}
       </span>
     </div>
-  );
-}
-
-function StarSVG({ size, className }: { size: number; className?: string }) {
-  //별 SVG (currentColor 사용)
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} className={className} aria-hidden="true">
-      <path
-        fill="currentColor"
-        d="M12 2.25l2.955 5.985 6.6.96-4.777 4.654 1.128 6.58L12 17.77l-5.906 3.659 1.128-6.58L2.445 9.195l6.6-.96L12 2.25z"
-      />
-    </svg>
   );
 }

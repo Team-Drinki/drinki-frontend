@@ -99,20 +99,8 @@ export default function TastingNoteWritePage() {
                   onOpenChange={setCatOpen}
                 >
                   <SelectTrigger
-                    className="
-                      w-auto
-                      h-6
-                      bg-transparent
-                      border-0
-                      border-b-2 border-[#402002]
-                      rounded-none
-                      shadow-none
-                      px-0
-                      text-brown-900 font-semibold
-                      justify-start
-                      focus:ring-0 focus:outline-none focus-visible:ring-0
-                      [&>svg]:hidden   /* shadcn 기본 chevron 숨기기 */
-                    "
+                    className="w-auto h-6 bg-transparent border-0 border-b-2 border-[#402002] rounded-none shadow-none px-0 
+                    text-brown-900 font-semibold justify-start focus:ring-0 focus:outline-none focus-visible:ring-0 [&>svg]:hidden"
                   >
                     <span className="flex items-center gap-2">
                       <SelectValue placeholder="게시판 주제 선택" />
