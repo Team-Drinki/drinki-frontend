@@ -10,7 +10,7 @@ export default function TastingNotePage() {
       <div className="container mx-auto px-6 py-8">
         {/* 새글쓰기 버튼 */}
         <div className="flex justify-end mb-6">
-          <Link href="/tasting-note/write">
+          <Link href="/tasting-note/write" passHref>
             {/* 임시 버튼, 필요시 삭제 */}
             <Button className="bg-yellow-500 hover:bg-yellow-600 text-brown-800 font-medium">
               <Pen className="w-4 h-4 mr-2" />
