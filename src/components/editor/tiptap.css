@@ -1,0 +1,141 @@
+/* TipTap Editor Styles */
+.ProseMirror {
+  outline: none;
+  min-height: 300px;
+  padding: 1rem;
+}
+
+
+
+.ProseMirror [style*="font-size"] {
+  line-height: 1.4;
+}
+
+
+.ProseMirror [style*="font-family"] {
+/*font*/
+}
+
+/* placeholder */
+.ProseMirror p.is-editor-empty:first-child::before {
+  color: #adb5bd;
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+}
+
+/* headings */
+.ProseMirror h1 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin: 1rem 0 0.5rem 0;
+}
+.ProseMirror h2 {
+  font-size: 1.25rem;
+  font-weight: bold;
+  margin: 0.75rem 0 0.5rem 0;
+}
+.ProseMirror h3 {
+  font-size: 1.125rem;
+  font-weight: bold;
+  margin: 0.5rem 0 0.25rem 0;
+}
+
+/* lists */
+.ProseMirror ul,
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+/* blockquote */
+.ProseMirror blockquote {
+  border-left: 3px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #6b7280;
+}
+
+/* media & links */
+.ProseMirror img {
+  max-width: 100%;
+  height: auto;
+  margin: 1rem 0;
+}
+.ProseMirror a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+.ProseMirror a:hover {
+  color: #2563eb;
+}
+
+/* hr */
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1rem 0;
+}
+
+/* table */
+.ProseMirror table {
+  border-collapse: collapse;
+  margin: 1rem 0;
+  width: 100%;
+  table-layout: fixed;
+}
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+  min-width: 100px;
+  position: relative;
+}
+.ProseMirror th {
+  background-color: #f9fafb;
+  font-weight: bold;
+}
+.ProseMirror .tableWrapper {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+.ProseMirror .resizable-table { position: relative; }
+.ProseMirror .resizable-table th,
+.ProseMirror .resizable-table td { position: relative; }
+.ProseMirror .resizable-table .resize-handle {
+  position: absolute;
+  right: -2px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background-color: #3b82f6;
+  cursor: col-resize;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+.ProseMirror .resizable-table:hover .resize-handle { opacity: 1; }
+
+/* text alignment */
+.ProseMirror .text-left { text-align: left; }
+.ProseMirror .text-center { text-align: center; }
+.ProseMirror .text-right { text-align: right; }
+
+/* code block */
+.ProseMirror pre {
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+.ProseMirror code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Courier New', monospace;
+  font-size: 0.875rem;
+}
+

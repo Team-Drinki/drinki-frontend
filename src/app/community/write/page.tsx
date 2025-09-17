@@ -34,7 +34,7 @@ export default function CommunityWritePage() {
 
   return (
     <div className="flex-1">
-      <div className="container mx-auto px-6 py-8">
+      <div className="mx-auto w-full max-w-4xl 2xl:max-w-5xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         {/* 뒤로가기 버튼 */}
         <div className="mb-6">
           <Link
@@ -48,27 +48,21 @@ export default function CommunityWritePage() {
 
         {/* 글 작성 폼 */}
         <form
-          className="max-w-4xl mx-auto px-5 md:px-6"
+          className="mx-auto w-full max-w-3xl lg:max-w-4xl px-4 sm:px-6"
           onSubmit={e => {
             e.preventDefault();
             handleSubmit();
           }}
         >
           {/* 주제 선택 및 제목 입력 */}
-          <div className="bg-[#FFF1B8] p-5 md:p-6 rounded-xl mb-6">
+          <div className="bg-[#FFF1B8] p-5 md:p-6 xl:p-4 rounded-xl mb-6">
             {/* 게시판 주제 선택 */}
             <div className="flex items-center justify-between">
               <Select value={selectedTopic} onValueChange={v => setSelectedTopic(v as TopicValue)}>
                 <div className="relative inline-flex">
                   <SelectTrigger
-                    className="
-    w-[140px] h-9 pl-3 pr-6
-    rounded-[10px] border border-brown-300 bg-transparent
-    text-sm font-semibold text-brown-800
-    shadow-none focus:ring-0 focus:outline-none
-    hover:bg-transparent
-    [&>svg]:hidden
-  "
+                    className="w-[140px] h-9 pl-3 pr-6 rounded-[10px] border border-brown-300 bg-transparent text-sm font-semibold 
+                    text-brown-800 shadow-none focus:ring-0 focus:outline-none hover:bg-transparent [&>svg]:hidden "
                     aria-label="게시판 주제 선택"
                   >
                     <span className="truncate">
@@ -97,8 +91,8 @@ export default function CommunityWritePage() {
                 placeholder="제목을 입력해주세요"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="w-full h-12 md:h-[52px] rounded-lg bg-white px-4 border border-transparent
-                   focus:border-brown-300 placeholder:text-gray-400 text-brown-900"
+                className="w-full h-12 xl:h-11 md:h-[52px] rounded-lg bg-white px-4 border border-transparent 
+                focus:border-brown-300 placeholder:text-gray-400 text-brown-900"
               />
             </div>
           </div>
@@ -112,7 +106,7 @@ export default function CommunityWritePage() {
           <div className="flex justify-end">
             <Button
               type="submit"
-              className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 py-2 rounded-lg font-medium"
+              className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 xl:px-6 py-2 xl:py-1.5 rounded-lg font-medium text-base xl:text-sm"
             >
               등록하기
             </Button>
