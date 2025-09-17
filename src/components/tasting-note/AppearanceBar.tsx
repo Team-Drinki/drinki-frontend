@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 export type AppearanceColor = 'pale' | 'straw' | 'gold' | 'amber' | 'mahogany';
 
+const SELECTED_RATIO = 1.3; // appearance bar 에서 선택되었을 때 높이 비율
 /**
  * PALETTE: 초심자용(5범주) + 고급용(세부 셰이드) 색상/라벨의 단일 소스
  * - baseHex: 초심자 모드에서 각 범주의 배경색
@@ -181,7 +182,7 @@ export default function AppearanceBar({
   return (
     <div className={`w-full ${className}`}>
       <div
-        className="w-full h-6 sm:h-7 md:h-8 rounded-none overflow-hidden border border-gray-300 bg-white"
+        className="w-full h-6 sm:h-7 md:h-8 rounded-none overflow-visible border border-gray-300 bg-white"
         role="radiogroup"
         aria-label="Appearance"
       >
@@ -199,11 +200,14 @@ export default function AppearanceBar({
                       setShadeIdx(i);
                       onChange(binOfIndex(i));
                     }}
-                    className="flex-1 h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 cursor-pointer"
+                    className="flex-1 h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 cursor-pointer transition-transform duration-150"
                     style={{
                       backgroundColor: s.hex,
-
-                      boxShadow: isSelected ? 'inset 0 0 0 2px #301700ff' : undefined,
+                      boxShadow: isSelected
+                        ? '0 0 5px rgba(0,0,0,0.35), 0 0 10px rgba(48,23,0,0.4)'
+                        : undefined,
+                      transform: isSelected ? `scaleY(${SELECTED_RATIO})` : undefined,
+                      transformOrigin: 'center',
                     }}
                     title={s.label}
                   />
@@ -222,8 +226,11 @@ export default function AppearanceBar({
                     className="flex-1 h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 cursor-pointer"
                     style={{
                       backgroundColor: seg.baseHex,
-
-                      boxShadow: isSelected ? 'inset 0 0 0 3px #000' : undefined,
+                      boxShadow: isSelected
+                        ? '0 0 10px rgba(0,0,0,0.35), 0 0 5px rgba(48,23,0,0.4)'
+                        : undefined,
+                      transform: isSelected ? `scaleY(${SELECTED_RATIO})` : undefined,
+                      transformOrigin: 'center',
                     }}
                     title={seg.label}
                   />
