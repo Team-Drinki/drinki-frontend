@@ -8,7 +8,7 @@ import { ReactNode } from 'react';
 export default function AppWrapper({ children }: { children: ReactNode }) {
   const pathname = usePathname();
 
-  const hideFooterRoutes = ['/login'];
+  const hideFooterRoutes = ['/login', '/tasting-note/write'];
 
   const showFooter = !hideFooterRoutes.includes(pathname);
 
