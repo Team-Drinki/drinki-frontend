@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from 'react';
 
 export type AppearanceColor = 'pale' | 'straw' | 'gold' | 'amber' | 'mahogany';
 
-const SELECTED_RATIO = 1.3; // appearance bar 에서 선택되었을 때 높이 비율
 /**
  * PALETTE: 초심자용(5범주) + 고급용(세부 셰이드) 색상/라벨의 단일 소스
  * - baseHex: 초심자 모드에서 각 범주의 배경색
@@ -105,7 +104,7 @@ const FLAT_SHADES = (() => {
   return out;
 })();
 
-/*
+/**
  * SEGMENT_INDEX: 각 5범주가 차지하는 전역 인덱스 구간과 대표 인덱스(가운데 값)
  * - start/end: FLAT_SHADES에서의 시작/끝 인덱스
  * - rep: 시각적 강조에 사용할 대표 인덱스(가운데)
@@ -147,7 +146,7 @@ export default function AppearanceBar({
   detailed = false,
 }: {
   value: AppearanceColor | null; // 현재 선택된 5범주
-  onChange: (v: AppearanceColor) => void;
+  onChange?: (v: AppearanceColor) => void;
   className?: string;
   showLabel?: boolean; // 하단 라벨 표시 여부
   detailed?: boolean; // true = expert, false = beginner
@@ -182,7 +181,7 @@ export default function AppearanceBar({
   return (
     <div className={`w-full ${className}`}>
       <div
-        className="w-full h-6 sm:h-7 md:h-8 rounded-none overflow-visible border border-gray-300 bg-white"
+        className="w-full h-6 sm:h-7 md:h-8 rounded-none overflow-hidden border border-gray-300 bg-white"
         role="radiogroup"
         aria-label="Appearance"
       >
@@ -198,16 +197,13 @@ export default function AppearanceBar({
                     role="radio"
                     onClick={() => {
                       setShadeIdx(i);
-                      onChange(binOfIndex(i));
+                      onChange && onChange(binOfIndex(i));
                     }}
-                    className="flex-1 h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 cursor-pointer transition-transform duration-150"
+                    className="flex-1 h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 cursor-pointer"
                     style={{
                       backgroundColor: s.hex,
-                      boxShadow: isSelected
-                        ? '0 0 5px rgba(0,0,0,0.35), 0 0 10px rgba(48,23,0,0.4)'
-                        : undefined,
-                      transform: isSelected ? `scaleY(${SELECTED_RATIO})` : undefined,
-                      transformOrigin: 'center',
+
+                      boxShadow: isSelected ? 'inset 0 0 0 2px #301700ff' : undefined,
                     }}
                     title={s.label}
                   />
@@ -222,15 +218,12 @@ export default function AppearanceBar({
                     type="button"
                     aria-checked={isSelected}
                     role="radio"
-                    onClick={() => onChange(seg.key)}
+                    onClick={() => onChange && onChange(seg.key)}
                     className="flex-1 h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 cursor-pointer"
                     style={{
                       backgroundColor: seg.baseHex,
-                      boxShadow: isSelected
-                        ? '0 0 10px rgba(0,0,0,0.35), 0 0 5px rgba(48,23,0,0.4)'
-                        : undefined,
-                      transform: isSelected ? `scaleY(${SELECTED_RATIO})` : undefined,
-                      transformOrigin: 'center',
+
+                      boxShadow: isSelected ? 'inset 0 0 0 3px #000' : undefined,
                     }}
                     title={seg.label}
                   />

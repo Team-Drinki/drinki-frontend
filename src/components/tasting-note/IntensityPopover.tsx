@@ -1,7 +1,6 @@
 'use client';
 
-import { useState } from 'react';
-import type { ReactNode } from 'react';
+import * as React from 'react';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Slider } from '@/components/ui/slider';
 
@@ -13,7 +12,7 @@ type Props = {
   max?: number;
   step?: number;
   asChild?: boolean;
-  children?: ReactNode;
+  children?: React.ReactNode;
   width?: number;
 };
 
@@ -28,7 +27,7 @@ export default function IntensityPopover({
   children,
   width = 200,
 }: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = React.useState(false);
 
   /* pop은 slider 부분 밑에 사각형을 어울리게 배치해서 말풍선 모양 만듦 */
   return (

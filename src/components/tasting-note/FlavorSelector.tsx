@@ -2,11 +2,10 @@
 
 import { useMemo, useState } from 'react';
 import IntensityPopover from '@/components/tasting-note/IntensityPopover';
-
+import { twMerge } from 'tailwind-merge';
 export type FlavorGroup = 'Aroma' | 'Palate' | 'Finish';
 export type FlavorGroupSelection = Record<FlavorGroup, Record<string, number>>;
 
-// beginner
 const VOCABS: Record<FlavorGroup, string[]> = {
   Aroma: [
     '꿀,설탕,시럽',
@@ -109,33 +108,35 @@ export default function FlavorSelector({
   );
 }
 
-function FlavorTile({
+export function FlavorTile({
   label,
   score,
   onChange,
+  className,
 }: {
   label: string;
   score: number; // 0~5
-  onChange: (s: number) => void;
+  onChange?: (s: number) => void;
+  className?: string;
 }) {
   const stateClass = useMemo(() => {
     return score > 0
-      ? 'bg-[#FFF8E4] border-amber-400'
+      ? 'bg-amber-300 border-amber-400'
       : 'bg-white border-brown-200 hover:border-amber-400';
   }, [score]);
 
   // 클릭 시 선택/해제 토글(선택 시 기본값 2.5)
-  const toggleSelect = () => (score > 0 ? onChange(0) : onChange(2.5));
+  const toggleSelect = () => (score > 0 ? onChange && onChange(0) : onChange && onChange(2.5));
 
   return (
     <IntensityPopover
       label={`${label} 강도 조절`}
       value={score}
-      onChange={v => onChange(Math.max(0, Math.min(5, v)))}
+      onChange={v => onChange && onChange(Math.max(0, Math.min(5, v)))}
       width={260}
       asChild
     >
-      <div className="relative">
+      <div className={twMerge('relative', className)}>
         <div
           role="button"
           tabIndex={0}
@@ -149,17 +150,19 @@ function FlavorTile({
               <span className="absolute bottom-1 left-1 rounded-md bg-white px-1.5 text-xs font-semibold">
                 {score.toFixed(1)}
               </span>
-              <button
-                type="button"
-                className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-xs shadow"
-                onClick={e => {
-                  e.stopPropagation();
-                  onChange(0);
-                }}
-                aria-label="remove"
-              >
-                ✕
-              </button>
+              {onChange && (
+                <button
+                  type="button"
+                  className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-xs shadow"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onChange && onChange(0);
+                  }}
+                  aria-label="remove"
+                >
+                  ✕
+                </button>
+              )}
             </>
           )}
         </div>
