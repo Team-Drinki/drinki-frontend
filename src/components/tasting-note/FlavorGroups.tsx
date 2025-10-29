@@ -65,7 +65,7 @@ export const FLAVOR_GROUPS_BEGINNER: BegFlavorItemDef[] = [
   {
     name: '말린 자두,무화과',
     iconSrc: '/images/icon/beg_driedPlumsFig.png',
-    iconActiveSrc: '/images/selectedIcon/beg_driedPlumsPig.png',
+    iconActiveSrc: '/images/selectedIcon/beg_driedPlumsFig.png',
     alt: '말린 자두, 무화과 아이콘',
   },
   {
@@ -145,8 +145,8 @@ export const FLAVOR_GROUPS_EXPERT = [
     items: [
       {
         name: '카라멜',
-        iconSrc: '/images/icon/caremel.png',
-        iconActiveSrc: '/images/selectedIcon/caremel.png',
+        iconSrc: '/images/icon/ceramel.png',
+        iconActiveSrc: '/images/selectedIcon/ceramel.png',
         alt: '카라멜',
       },
       {
