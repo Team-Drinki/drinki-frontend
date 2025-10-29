@@ -1,68 +1,97 @@
 'use client';
 
-import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import Image from 'next/image';
 import IntensityPopover from './IntensityPopover';
 
 type Props = {
   label: string;
+  iconSrc?: string;
+  iconActiveSrc?: string;
   isSelected: boolean;
-  intensity: number;
+  intensity: number; // 0~5
   onSelect: () => void;
   onDeselect: () => void;
   onIntensityChange: (value: number) => void;
+  className?: string;
 };
 
 export default function FlavorItem({
   label,
+  iconSrc,
+  iconActiveSrc,
   isSelected,
   intensity,
   onSelect,
   onDeselect,
   onIntensityChange,
+  className,
 }: Props) {
-  // 선택되지 않았을 때의 UI
-  if (!isSelected) {
-    return (
-      <button
-        type="button"
-        onClick={onSelect}
-        className="flex items-center justify-center text-center h-24 rounded-lg border border-gray-200 bg-white text-sm text-gray-700 transition-all hover:border-yellow-300 active:border-yellow-500"
-      >
-        {label}
-      </button>
-    );
-  }
+  const src = isSelected ? (iconActiveSrc ?? iconSrc) : iconSrc;
 
-  // 선택되었을 때의 UI (팝업 기능 포함)
+  // 클릭 시 선택/해제
+  const handleClick = () => (isSelected ? onDeselect() : onSelect());
+
+  // 상단: 아이콘 박스 / 하단: 라벨
+  const Tile = (
+    <div className={['relative flex flex-col items-center', className ?? ''].join(' ')}>
+      {/* 아이콘 박스 */}
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        className={[
+          'relative flex h-24 w-28 items-center justify-center rounded-xl border bg-white transition',
+          isSelected
+            ? 'border-[#402002] ring-2 ring-amber-400'
+            : 'border-brown-200 hover:border-amber-400',
+        ].join(' ')}
+      >
+        {src && (
+          <Image
+            src={src}
+            alt={label}
+            width={48}
+            height={48}
+            draggable={false}
+            className="object-contain"
+          />
+        )}
+
+        {/* 선택 시 우하단 강도 배지 + 우상단 삭제 버튼 */}
+        {isSelected && (
+          <>
+            <span className="absolute bottom-1 right-2 rounded-md bg-white/95 px-1.5 text-[10px] font-semibold shadow-sm">
+              {intensity.toFixed(1)}
+            </span>
+            <button
+              type="button"
+              className="absolute right-1 top-1 rounded-full bg-white/90 px-1 text-[10px] shadow"
+              onClick={e => {
+                e.stopPropagation();
+                onDeselect();
+              }}
+              aria-label="remove"
+            >
+              ✕
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* 라벨 (박스 아래) */}
+      <div className="mt-2 text-xs text-brown-800">{label}</div>
+    </div>
+  );
+
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <div className="relative flex flex-col items-center justify-center h-24 rounded-lg bg-[#FFF8E4] cursor-pointer text-sm text-brown-900 font-semibold p-2 border-2 border-amber-400">
-          <button
-            type="button"
-            onClick={e => {
-              e.stopPropagation();
-              onDeselect();
-            }}
-            className="absolute top-1 right-1 w-5 h-5 bg-black/20 rounded-full text-white text-xs"
-          >
-            ×
-          </button>
-          <span className="text-center">{label}</span>
-          <span className="absolute bottom-1 right-2 text-lg font-bold">
-            {intensity.toFixed(1)}
-          </span>
-        </div>
-      </PopoverTrigger>
-      <PopoverContent className="border-none bg-transparent shadow-none w-auto p-0">
-        <IntensityPopover
-          label={label}
-          value={intensity}
-          onChange={onIntensityChange}
-          step={0.1} // 0.1 단위로 설정
-          width={280}
-        />
-      </PopoverContent>
-    </Popover>
+    <IntensityPopover
+      label={`${label} 강도 조절`}
+      value={intensity}
+      onChange={v => onIntensityChange(Math.max(0, Math.min(5, v)))}
+      width={260}
+      asChild
+    >
+      {Tile}
+    </IntensityPopover>
   );
 }

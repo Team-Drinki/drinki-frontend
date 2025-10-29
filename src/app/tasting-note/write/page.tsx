@@ -14,6 +14,7 @@ import FlavorSelector, {
 import FlavorGroupCard from '@/components/tasting-note/FlavorGroupCard';
 import { FLAVOR_GROUPS } from '@/components/tasting-note/FlavorGroups';
 import IntensityPopover from '@/components/tasting-note/IntensityPopover';
+import FlavorItem from '@/components/tasting-note/FlavorItem';
 
 import { Search } from 'lucide-react';
 
@@ -433,14 +434,23 @@ function ExpertForm(props: {
           {FLAVOR_GROUPS.filter((_, i) => i % 2 === 0).map(group => (
             <FlavorGroupCard key={group.key} label={group.label} info={group.info}>
               <div className="grid grid-cols-2 gap-3">
-                {group.items.map(name => (
-                  <ExpertFlavorItem
-                    key={name}
-                    label={name}
-                    score={flavors[tab]?.[name] ?? 0}
-                    onChange={(s: number) => setScoreOnCurrentTab(name, s)}
-                  />
-                ))}
+                {group.items.map(item => {
+                  const selected = !!flavors[tab]?.[item.name];
+                  const intensity = flavors[tab]?.[item.name] ?? 0;
+                  return (
+                    <FlavorItem
+                      key={`${group.key}:${item.name}`}
+                      label={item.name}
+                      iconSrc={item.iconSrc}
+                      iconActiveSrc={item.iconActiveSrc}
+                      isSelected={selected}
+                      intensity={intensity}
+                      onSelect={() => setScoreOnCurrentTab(item.name, 2.5)}
+                      onDeselect={() => setScoreOnCurrentTab(item.name, 0)}
+                      onIntensityChange={v => setScoreOnCurrentTab(item.name, v)}
+                    />
+                  );
+                })}
               </div>
             </FlavorGroupCard>
           ))}
@@ -449,14 +459,23 @@ function ExpertForm(props: {
           {FLAVOR_GROUPS.filter((_, i) => i % 2 === 1).map(group => (
             <FlavorGroupCard key={group.key} label={group.label} info={group.info}>
               <div className="grid grid-cols-2 gap-3">
-                {group.items.map(name => (
-                  <ExpertFlavorItem
-                    key={name}
-                    label={name}
-                    score={flavors[tab]?.[name] ?? 0}
-                    onChange={(s: number) => setScoreOnCurrentTab(name, s)}
-                  />
-                ))}
+                {group.items.map(item => {
+                  const selected = !!flavors[tab]?.[item.name];
+                  const intensity = flavors[tab]?.[item.name] ?? 0;
+                  return (
+                    <FlavorItem
+                      key={`${group.key}:${item.name}`}
+                      label={item.name}
+                      iconSrc={item.iconSrc}
+                      iconActiveSrc={item.iconActiveSrc}
+                      isSelected={selected}
+                      intensity={intensity}
+                      onSelect={() => setScoreOnCurrentTab(item.name, 2.5)}
+                      onDeselect={() => setScoreOnCurrentTab(item.name, 0)}
+                      onIntensityChange={v => setScoreOnCurrentTab(item.name, v)}
+                    />
+                  );
+                })}
               </div>
             </FlavorGroupCard>
           ))}
