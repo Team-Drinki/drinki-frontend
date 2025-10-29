@@ -1,3 +1,16 @@
+export type FlavorItemDef = {
+  name: string;
+  iconSrc: string;
+  iconActiveSrc: string;
+  alt?: string;
+};
+export type FlavorGroupDef = {
+  key: string;
+  label: string;
+  info: string;
+  items: FlavorItemDef[];
+};
+
 /* expert version FlavorSelector components  
 key : category 
 info : 주 생성 공정 
@@ -99,6 +112,17 @@ export const FLAVOR_GROUPS = [
     key: 'sulfur',
     label: '황 향 (Sulfur)',
     info: '황화수소, 디메틸설파이드(DMS) 등이 성냥불·고무 같은 향을 내며, 발효 스트레스·포트스틸 컷 미흡·셰리 캐스크 숙성에서 강화되기도 합니다. 일부는 결점이지만 개성으로 남기는 경우도 있습니다.',
-    items: ['성냥불', '고무', '화약'],
+    //items: ['성냥불', '고무', '화약'],
+    items: [
+      {
+        name: '성냥불',
+        iconSrc: '/images/icon/matchFire.png',
+        iconActiveSrc: '/images/selectedIcon/matchFire.png',
+        alt: '성냥불 아이콘',
+      },
+    ],
   },
 ];
+
+// tems: [
+//     { name: '성냥불', iconSrc: '/images/icon/sulfur_match.png', alt: '성냥불 아이콘' }
