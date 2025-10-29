@@ -179,9 +179,9 @@ export default function AppearanceBar({
   }, [detailed, shadeIdx, value]);
 
   return (
-    <div className={`w-full ${className}`}>
+    <div className={`w-full max-w-[1048px] mx-auto ${className}`}>
       <div
-        className="w-full h-6 sm:h-7 md:h-8 rounded-none overflow-hidden border border-gray-300 bg-white"
+        className="w-full h-9 sm:h-11 md:h-13 lg:h-[50px] rounded-none overflow-visible border border-gray-300 bg-white"
         role="radiogroup"
         aria-label="Appearance"
       >
@@ -199,11 +199,15 @@ export default function AppearanceBar({
                       setShadeIdx(i);
                       onChange && onChange(binOfIndex(i));
                     }}
-                    className="flex-1 h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 cursor-pointer"
+                    className="flex-1 h-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 
+                              transition-[transform,box-shadow] duration-250 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform"
                     style={{
                       backgroundColor: s.hex,
-
-                      boxShadow: isSelected ? 'inset 0 0 0 2px #301700ff' : undefined,
+                      transform: isSelected ? 'scale(1.08)' : 'scale(1)',
+                      boxShadow: isSelected ? '0 12px 28px rgba(0,0,0,0.28)' : 'none',
+                      border: 'none',
+                      position: isSelected ? 'relative' : undefined,
+                      zIndex: isSelected ? 1 : undefined,
                     }}
                     title={s.label}
                   />
@@ -219,11 +223,15 @@ export default function AppearanceBar({
                     aria-checked={isSelected}
                     role="radio"
                     onClick={() => onChange && onChange(seg.key)}
-                    className="flex-1 h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 cursor-pointer"
+                    className="flex-1 h-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 
+                                transition-[transform,box-shadow] duration-250 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform"
                     style={{
                       backgroundColor: seg.baseHex,
-
-                      boxShadow: isSelected ? 'inset 0 0 0 3px #000' : undefined,
+                      transform: isSelected ? 'scale(1.08)' : 'scale(1)',
+                      boxShadow: isSelected ? '0 12px 28px rgba(0,0,0,0.28)' : 'none',
+                      border: 'none',
+                      position: isSelected ? 'relative' : undefined,
+                      zIndex: isSelected ? 1 : undefined,
                     }}
                     title={seg.label}
                   />
