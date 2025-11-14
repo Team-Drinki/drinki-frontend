@@ -66,6 +66,11 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
   const [fontSize, setFontSize] = useState('15');
   const [fontSizeMode, setFontSizeMode] = useState<'select' | 'custom'>('select');
   const fontSizeInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
+  const [imageSize, setImageSize] = useState('100%');
+  const [imageAlign, setImageAlign] = useState<'left' | 'center' | 'right'>('left');
+  const [imageLink, setImageLink] = useState('');
 
   // TextStyle 마크에 fontSize / fontFamily 속성을 붙이는 커스텀 확장
   const FontStyle = TextStyle.extend({
@@ -86,12 +91,91 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     },
   });
 
+  // Image extension 확장 - width, height, align, href 속성 추가
+  const CustomImage = Image.extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        width: {
+          default: null,
+          parseHTML: element => {
+            const width = element.getAttribute('width') || element.style.width;
+            return width || null;
+          },
+          renderHTML: attrs => {
+            if (!attrs.width) return {};
+            return { width: attrs.width, style: `width: ${attrs.width}` };
+          },
+        },
+        height: {
+          default: null,
+          parseHTML: element => {
+            const height = element.getAttribute('height') || element.style.height;
+            return height || null;
+          },
+          renderHTML: attrs => {
+            if (!attrs.height) return {};
+            return { height: attrs.height, style: `height: ${attrs.height}` };
+          },
+        },
+        align: {
+          default: 'left',
+          parseHTML: element => {
+            const align = element.style.textAlign || element.getAttribute('align') || 'left';
+            return align;
+          },
+          renderHTML: attrs => {
+            if (!attrs.align || attrs.align === 'left') return {};
+            return { style: `text-align: ${attrs.align}` };
+          },
+        },
+        href: {
+          default: null,
+          parseHTML: element => {
+            const parent = element.parentElement;
+            if (parent?.tagName === 'A') {
+              return parent.getAttribute('href') || null;
+            }
+            return null;
+          },
+          renderHTML: attrs => {
+            if (!attrs.href) return {};
+            return {};
+          },
+        },
+      };
+    },
+    renderHTML({ HTMLAttributes }) {
+      const { href, ...rest } = HTMLAttributes;
+      if (href) {
+        return ['a', { href, target: '_blank', rel: 'noopener noreferrer' }, ['img', rest]];
+      }
+      return ['img', rest];
+    },
+  });
+
   // 에디터 상태에 따른 드롭다운 값 업데이트
   const updateDropdownValues = () => {
     if (editor) {
       if (editor.isActive('heading', { level: 1 })) setTextStyle('제목1');
       else if (editor.isActive('heading', { level: 2 })) setTextStyle('제목2');
       else setTextStyle('본문');
+    }
+  };
+
+  // 이미지 속성 업데이트
+  const updateImageAttributes = () => {
+    if (!editor) return;
+    if (editor.isActive('image')) {
+      const attrs = editor.getAttributes('image');
+      setImageSize(attrs.width || '100%');
+      setImageAlign(attrs.align || 'left');
+      setImageLink(attrs.href || '');
+    } else {
+      // 이미지가 선택되지 않았을 때 기본값으로 초기화
+      setImageSize('100%');
+      setImageAlign('left');
+      setImageLink('');
     }
   };
 
@@ -122,9 +206,9 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     extensions: [
       StarterKit,
       FontStyle,
-      Image,
+      CustomImage,
       Link,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
+      TextAlign.configure({ types: ['heading', 'paragraph', 'image'] }),
       Underline,
       Color,
       Highlight,
@@ -151,6 +235,10 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
       updateDropdownValues();
+      updateImageAttributes();
+    },
+    onSelectionUpdate: ({ editor }) => {
+      updateImageAttributes();
     },
     editorProps: { attributes: { class: 'ProseMirror max-w-none focus:outline-none' } },
     immediatelyRender: false,
@@ -327,9 +415,9 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
               <SelectContent>
                 <SelectItem value="12">12</SelectItem>
                 <SelectItem value="14">14</SelectItem>
-                <SelectItem value="15">15</SelectItem>
                 <SelectItem value="16">16</SelectItem>
                 <SelectItem value="18">18</SelectItem>
+                <SelectItem value="20">20</SelectItem>
               </SelectContent>
             </Select>
 
@@ -407,6 +495,19 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       .run();
   };
 
+  const applyFontSizeValue = (value: string) => {
+    if (!editor || !value) return false;
+    const numeric = Number(value);
+    if (Number.isNaN(numeric)) return false;
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange('textStyle')
+      .setMark('textStyle', { fontSize: `${numeric}px` })
+      .run();
+    return true;
+  };
+
   // 폰트 크기 변경
   const handleFontSizeChange = (value: string) => {
     if (value === 'custom') {
@@ -416,55 +517,109 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     }
     setFontSize(value);
     setFontSizeMode('select');
-    if (editor && value) {
-      editor
-        .chain()
-        .focus()
-        .extendMarkRange('textStyle')
-        .setMark('textStyle', { fontSize: `${value}px` })
-        .run();
-    }
+    applyFontSizeValue(value);
   };
 
   // 폰트 크기 직접 입력
   const handleFontSizeInput = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFontSize(value);
-    if (editor && value && !isNaN(Number(value))) {
-      editor
-        .chain()
-        .focus()
-        .extendMarkRange('textStyle')
-        .setMark('textStyle', { fontSize: `${value}px` })
-        .run();
-    }
+    setFontSize(e.target.value);
   };
 
   const handleFontSizeInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter' && fontSize) setFontSizeMode('select');
+    if (e.key === 'Enter' && fontSize) {
+      const applied = applyFontSizeValue(fontSize);
+      if (applied) setFontSizeMode('select');
+    }
   };
 
   const addImage = () => {
-    const url = window.prompt('이미지 URL을 입력하세요:');
-    if (url) editor.chain().focus().setImage({ src: url, alt: '이미지' }).run();
+    imageInputRef.current?.click();
+  };
+
+  const handleImageFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 이미지 파일인지 확인
+    if (!file.type.startsWith('image/')) {
+      alert('이미지 파일만 업로드할 수 있습니다.');
+      return;
+    }
+
+    // 파일 크기 제한 (예: 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      alert('파일 크기는 10MB 이하여야 합니다.');
+      return;
+    }
+
+    // Blob URL 생성
+    const imageUrl = URL.createObjectURL(file);
+    
+    // 이미지를 에디터에 삽입
+    editor.chain().focus().setImage({ src: imageUrl, alt: '이미지' }).run();
+
+    // input 초기화 (같은 파일을 다시 선택할 수 있도록)
+    e.target.value = '';
+  };
+
+  // 이미지 크기 변경
+  const handleImageSizeChange = (value: string) => {
+    if (!editor || !editor.isActive('image')) return;
+    setImageSize(value);
+    editor.chain().focus().updateAttributes('image', { width: value }).run();
+  };
+
+  // 이미지 정렬 변경
+  const handleImageAlignChange = (align: 'left' | 'center' | 'right') => {
+    if (!editor || !editor.isActive('image')) return;
+    setImageAlign(align);
+    editor.chain().focus().updateAttributes('image', { align }).run();
+    // 부모 paragraph의 정렬도 변경
+    editor.chain().focus().setTextAlign(align).run();
+  };
+
+  // 이미지 링크 설정
+  const handleImageLinkChange = () => {
+    if (!editor || !editor.isActive('image')) return;
+    const currentLink = imageLink;
+    const url = window.prompt('링크 URL을 입력하세요:', currentLink || '');
+    if (url === null) return; // 취소한 경우
+    
+    setImageLink(url || '');
+    editor.chain().focus().updateAttributes('image', { href: url || null }).run();
   };
 
   const addVideo = () => {
-    const url = window.prompt('동영상 URL을 입력하세요 (YouTube, Vimeo 등):');
-    if (!url) return;
-    let embedUrl = url;
-    if (url.includes('youtube.com/watch')) {
-      const videoId = url.split('v=')[1]?.split('&')[0];
-      if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    } else if (url.includes('youtu.be/')) {
-      const videoId = url.split('youtu.be/')[1];
-      if (videoId) embedUrl = `https://www.youtube.com/embed/${videoId}`;
-    } else if (url.includes('vimeo.com/')) {
-      const videoId = url.split('vimeo.com/')[1];
-      if (videoId) embedUrl = `https://player.vimeo.com/video/${videoId}`;
+    videoInputRef.current?.click();
+  };
+
+  const handleVideoFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // 비디오 파일인지 확인
+    if (!file.type.startsWith('video/')) {
+      alert('비디오 파일만 업로드할 수 있습니다.');
+      return;
     }
-    const videoHtml = `<div class="video-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; margin: 1rem 0;"><iframe src="${embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allowfullscreen></iframe></div>`;
+
+    // 파일 크기 제한 (예: 100MB)
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+      alert('파일 크기는 100MB 이하여야 합니다.');
+      return;
+    }
+
+    // Blob URL 생성
+    const videoUrl = URL.createObjectURL(file);
+    
+    // 비디오 요소를 HTML로 삽입
+    const videoHtml = `<div class="video-wrapper" style="position: relative; padding-bottom: 56.25%; height: 0; margin: 1rem 0; overflow: hidden; border-radius: 8px;"><video src="${videoUrl}" controls style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" preload="metadata"></video></div>`;
     editor.chain().focus().insertContent(videoHtml).run();
+
+    // input 초기화 (같은 파일을 다시 선택할 수 있도록)
+    e.target.value = '';
   };
 
   const addQuote = () => editor.chain().focus().toggleBlockquote().run();
@@ -605,7 +760,6 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
                 <SelectContent>
                   <SelectItem value="12">12</SelectItem>
                   <SelectItem value="14">14</SelectItem>
-                  <SelectItem value="15">15</SelectItem>
                   <SelectItem value="16">16</SelectItem>
                   <SelectItem value="18">18</SelectItem>
                   <SelectItem value="20">20</SelectItem>
@@ -712,10 +866,89 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         </div>
       </div>
 
+      {/* 이미지 편집 도구 모음 - 이미지 선택 시 표시 */}
+      {editor && editor.isActive('image') && (
+        <div className="p-3 border-b border-brown-200 bg-gray-50">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* 이미지 크기 */}
+            <Select value={imageSize} onValueChange={handleImageSizeChange}>
+              <SelectTrigger className="w-24 h-8 text-xs" onMouseDown={e => e.preventDefault()}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25%">25%</SelectItem>
+                <SelectItem value="50%">50%</SelectItem>
+                <SelectItem value="75%">75%</SelectItem>
+                <SelectItem value="100%">100%</SelectItem>
+                <SelectItem value="200px">200px</SelectItem>
+                <SelectItem value="300px">300px</SelectItem>
+                <SelectItem value="400px">400px</SelectItem>
+                <SelectItem value="500px">500px</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* 이미지 정렬 */}
+            <Button
+              variant={imageAlign === 'left' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleImageAlignChange('left')}
+              className="h-8 w-8 p-0"
+            >
+              <AlignLeft className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={imageAlign === 'center' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleImageAlignChange('center')}
+              className="h-8 w-8 p-0"
+            >
+              <AlignCenter className="w-4 h-4" />
+            </Button>
+            <Button
+              variant={imageAlign === 'right' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleImageAlignChange('right')}
+              className="h-8 w-8 p-0"
+            >
+              <AlignRight className="w-4 h-4" />
+            </Button>
+
+            {/* 이미지 링크 */}
+            <Button
+              variant={imageLink ? 'default' : 'ghost'}
+              size="sm"
+              onClick={handleImageLinkChange}
+              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+            >
+              <LinkIcon className="w-4 h-4 mr-1" />
+              {imageLink ? '링크 수정' : '링크 추가'}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* 에디터 본문 */}
       <div className="p-4 min-h-96">
         <EditorContent editor={editor} className="ProseMirror max-w-none focus:outline-none" />
       </div>
+
+      {/* 숨겨진 이미지 파일 입력 */}
+      <input
+        ref={imageInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleImageFileSelect}
+      />
+
+      {/* 숨겨진 비디오 파일 입력 */}
+      <input
+        ref={videoInputRef}
+        type="file"
+        accept="video/*"
+        className="hidden"
+        onChange={handleVideoFileSelect}
+      />
     </div>
   );
 }
