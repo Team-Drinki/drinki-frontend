@@ -433,7 +433,7 @@ function ExpertForm(props: {
         <div className="flex flex-col gap-4">
           {FLAVOR_GROUPS_EXPERT.filter((_, i) => i % 2 === 0).map(group => (
             <FlavorGroupCard key={group.key} label={group.label} info={group.info}>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 {group.items.map(item => {
                   const selected = !!flavors[tab]?.[item.name];
                   const intensity = flavors[tab]?.[item.name] ?? 0;
@@ -458,7 +458,7 @@ function ExpertForm(props: {
         <div className="flex flex-col gap-4">
           {FLAVOR_GROUPS_EXPERT.filter((_, i) => i % 2 === 1).map(group => (
             <FlavorGroupCard key={group.key} label={group.label} info={group.info}>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-3 gap-3">
                 {group.items.map(item => {
                   const selected = !!flavors[tab]?.[item.name];
                   const intensity = flavors[tab]?.[item.name] ?? 0;
