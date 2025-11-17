@@ -48,7 +48,6 @@ export default function FlavorGroupCard({
               )}
             </Tooltip>
           </TooltipProvider>
-
           <span className="font-semibold text-brown-900">{label}</span>
         </div>
 
