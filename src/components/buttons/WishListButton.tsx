@@ -1,19 +1,23 @@
 'use client';
-import CustomButton from '../common/CustomButton';
-import Heart from '../svg/Heart';
 import { useState } from 'react';
 
+import CustomButton from '../common/CustomButton';
+import Heart from '../svg/Heart';
+
 export default function WishListButton() {
-  const [isActive, setIsActive] = useState(false);
+  const [isWishlisted, setIsWishlisted] = useState(false);
+
+  const handleToggleWishList = () => setIsWishlisted(prev => !prev);
 
   return (
     <CustomButton
-      className={`w-25 h-8 rounded-md text-caption text-[var(--color-black)] ${isActive ? 'bg-[var(--color-yellow-200)]' : 'bg-[var(--color-grey-300)]'} hover:bg-[var(--color-yellow-300)]`}
-      icon={<Heart fill={isActive} />}
+      className={`rounded-md text-caption text-[var(--color-black)] gap-[2rem] ${isWishlisted ? 'bg-[var(--color-yellow-200)]' : 'bg-[var(--color-grey-300)]'} hover:bg-[var(--color-yellow-300)]`}
+      icon={<Heart fill={isWishlisted} />}
       iconPosition="left"
-      onClick={() => setIsActive(!isActive)}
+      aria-pressed={isWishlisted}
+      onClick={handleToggleWishList}
     >
-      <span>위시리스트</span>
+      위시리스트
     </CustomButton>
   );
 }
