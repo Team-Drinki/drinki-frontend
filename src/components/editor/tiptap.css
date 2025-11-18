@@ -1,22 +1,18 @@
 /* TipTap Editor Styles */
+
+/* 에디터 기본 스타일 */
 .ProseMirror {
   outline: none;
   min-height: 300px;
   padding: 1rem;
 }
 
-
-
+/* 폰트 크기 적용 시 줄 간격 */
 .ProseMirror [style*="font-size"] {
   line-height: 1.4;
 }
 
-
-.ProseMirror [style*="font-family"] {
-/*font*/
-}
-
-/* placeholder */
+/* 빈 에디터 플레이스홀더 텍스트 */
 .ProseMirror p.is-editor-empty:first-child::before {
   color: #adb5bd;
   content: attr(data-placeholder);
@@ -25,7 +21,7 @@
   pointer-events: none;
 }
 
-/* headings */
+/* 제목 스타일 (h1, h2) */
 .ProseMirror h1 {
   font-size: 1.5rem;
   font-weight: bold;
@@ -36,20 +32,54 @@
   font-weight: bold;
   margin: 0.75rem 0 0.5rem 0;
 }
-.ProseMirror h3 {
-  font-size: 1.125rem;
-  font-weight: bold;
-  margin: 0.5rem 0 0.25rem 0;
-}
 
-/* lists */
-.ProseMirror ul,
-.ProseMirror ol {
+/* 리스트 스타일 */
+/* Bullet List (점 리스트) */
+.ProseMirror ul {
+  list-style-type: disc;
+  list-style-position: outside;
   padding-left: 1.5rem;
   margin: 0.5rem 0;
 }
 
-/* blockquote */
+.ProseMirror ul li {
+  display: list-item;
+  margin: 0.25rem 0;
+}
+
+/* Ordered List (숫자 리스트) */
+.ProseMirror ol {
+  list-style-type: decimal;
+  list-style-position: outside;
+  padding-left: 1.5rem;
+  margin: 0.5rem 0;
+}
+
+.ProseMirror ol li {
+  display: list-item;
+  margin: 0.25rem 0;
+}
+
+/* 중첩 리스트 (2단계, 3단계) */
+.ProseMirror ul ul {
+  list-style-type: circle; /* 2단계: 원형 점 */
+  margin-top: 0.25rem;
+  margin-bottom: 0.25rem;
+}
+
+.ProseMirror ul ul ul {
+  list-style-type: square; /* 3단계: 사각형 점 */
+}
+
+.ProseMirror ol ol {
+  list-style-type: lower-alpha; /* 2단계: 소문자 알파벳 */
+}
+
+.ProseMirror ol ol ol {
+  list-style-type: lower-roman; /* 3단계: 소문자 로마숫자 */
+}
+
+/* 인용구 스타일 */
 .ProseMirror blockquote {
   border-left: 3px solid #e5e7eb;
   padding-left: 1rem;
@@ -58,12 +88,32 @@
   color: #6b7280;
 }
 
-/* media & links */
+/* 미디어 & 링크 */
+/* 이미지 */
 .ProseMirror img {
   max-width: 100%;
   height: auto;
   margin: 1rem 0;
 }
+
+/* 비디오 플레이어 (16:9 비율 유지) */
+.ProseMirror .video-wrapper {
+  position: relative;
+  padding-bottom: 56.25%; /* 16:9 비율 */
+  height: 0;
+  margin: 1rem 0;
+  overflow: hidden;
+  border-radius: 8px;
+}
+.ProseMirror .video-wrapper video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 링크 */
 .ProseMirror a {
   color: #3b82f6;
   text-decoration: underline;
@@ -72,14 +122,14 @@
   color: #2563eb;
 }
 
-/* hr */
+/* 구분선 (수평선) */
 .ProseMirror hr {
   border: none;
   border-top: 1px solid #e5e7eb;
   margin: 1rem 0;
 }
 
-/* table */
+/* 테이블 */
 .ProseMirror table {
   border-collapse: collapse;
   margin: 1rem 0;
@@ -95,35 +145,11 @@
   position: relative;
 }
 .ProseMirror th {
-  background-color: #f9fafb;
+  background-color: #f9fafb; /* 헤더 배경색 */
   font-weight: bold;
 }
-.ProseMirror .tableWrapper {
-  overflow-x: auto;
-  margin: 1rem 0;
-}
-.ProseMirror .resizable-table { position: relative; }
-.ProseMirror .resizable-table th,
-.ProseMirror .resizable-table td { position: relative; }
-.ProseMirror .resizable-table .resize-handle {
-  position: absolute;
-  right: -2px;
-  top: 0;
-  bottom: 0;
-  width: 4px;
-  background-color: #3b82f6;
-  cursor: col-resize;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-.ProseMirror .resizable-table:hover .resize-handle { opacity: 1; }
 
-/* text alignment */
-.ProseMirror .text-left { text-align: left; }
-.ProseMirror .text-center { text-align: center; }
-.ProseMirror .text-right { text-align: right; }
-
-/* code block */
+/* 코드 블록 */
 .ProseMirror pre {
   background-color: #f3f4f6;
   border-radius: 0.375rem;
@@ -131,11 +157,199 @@
   margin: 1rem 0;
   overflow-x: auto;
 }
+/* 인라인 코드 */
 .ProseMirror code {
   background-color: #f3f4f6;
   padding: 0.125rem 0.25rem;
   border-radius: 0.25rem;
   font-family: 'Courier New', monospace;
   font-size: 0.875rem;
+}
+
+/* 북마크 스타일 (Notion 스타일) */
+/* URL을 붙여넣으면 자동으로 북마크 카드로 변환 */
+.ProseMirror .bookmark-wrapper {
+  margin: 1rem 0;
+  width: 100%;
+}
+
+.ProseMirror .bookmark-link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.ProseMirror .bookmark-link:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.ProseMirror .bookmark-content {
+  display: flex;
+  align-items: stretch;
+  min-height: 120px;
+}
+
+.ProseMirror .bookmark-info {
+  flex: 1;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.ProseMirror .bookmark-favicon {
+  width: 16px;
+  height: 16px;
+  margin-right: 0.5rem;
+  flex-shrink: 0;
+}
+
+.ProseMirror .bookmark-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.ProseMirror .bookmark-title {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* 최대 2줄 */
+  -webkit-box-orient: vertical;
+}
+
+.ProseMirror .bookmark-description {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2; /* 최대 2줄 */
+  -webkit-box-orient: vertical;
+}
+
+.ProseMirror .bookmark-url {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ProseMirror .bookmark-image {
+  width: 140px;
+  height: 100%;
+  object-fit: cover;
+  flex-shrink: 0;
+  background-color: #f3f4f6;
+}
+
+/* 파일 임베디드 스타일 */
+.ProseMirror .file-wrapper {
+  margin: 1rem 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s;
+}
+
+.ProseMirror .file-wrapper:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.ProseMirror .file-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.ProseMirror .file-icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ProseMirror .file-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.ProseMirror .file-name {
+  font-weight: 500;
+  font-size: 0.875rem;
+  color: #111827;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.4;
+}
+
+.ProseMirror .file-size {
+  font-size: 0.75rem;
+  color: #6b7280;
+  line-height: 1.4;
+}
+
+.ProseMirror .file-download {
+  padding: 0.5rem 1rem;
+  background-color: #3b82f6;
+  color: white;
+  text-decoration: none;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.ProseMirror .file-download:hover {
+  background-color: #2563eb;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
+}
+
+/* 모바일 반응형 (640px 이하) */
+@media (max-width: 640px) {
+  .ProseMirror .bookmark-content {
+    flex-direction: column;
+  }
+  
+  .ProseMirror .bookmark-image {
+    width: 100%;
+    height: 200px;
+  }
+  
+  .ProseMirror .file-content {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .ProseMirror .file-download {
+    width: 100%;
+    text-align: center;
+  }
 }
 
