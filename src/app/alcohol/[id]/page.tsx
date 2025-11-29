@@ -47,7 +47,7 @@ export default async function AlcoholDetailPage({ params }: AlcoholDetailPagePro
             </div>
             <h3 className="text-head3 mb-2">{data.name}</h3>
             <div className="flex flex-row gap-[1.25rem]">
-              <WishListButton />
+              <WishListButton alcoholId={id} initialIsWish={data.isWish} />
               <TastingNoteButton />
             </div>
             <dl className="grid grid-cols-[auto_1fr] gap-x-8 gap-y-5 my-8">
