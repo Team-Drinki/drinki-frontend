@@ -27,26 +27,27 @@ export default async function AlcoholDetailPage({ params }: AlcoholDetailPagePro
     const data = await getAlcoholDetail(id);
 
     return (
-      <main className="flex justify-center flex-col mx-32">
+      <main className="flex justify-center flex-col mx-5 md:mx-16 lg:mx-32">
         <BackButton className="mt-10 mb-6">Drink</BackButton>
         {/* Alcohol Detail Section */}
-        <section className="flex flex-row items-start gap-16 mb-21">
-          <div className="relative w-115 h-154 bg-[var(--color-grey-100)] rounded-lg overflow-hidden">
+        <section className="flex flex-col lg:flex-row gap-8 lg:gap-16 mb-21">
+          <div className="relative w-full max-w-[28.75rem] aspect-[115/154] bg-[var(--color-grey-100)] rounded-lg overflow-hidden flex-shrink-0">
             <Image
               src={data.image ?? '/images/whisky.png'}
               alt={data.name}
               fill
+              sizes="(max-width: 1024px) 100vw, 460px"
               className="object-contain"
             />
           </div>
-          <div className="flex flex-col h-154 flex-1">
+          <div className="flex flex-col flex-1 w-full">
             <div className="flex flex-row items-center mb-5">
               <span className="text-head6 text-grey-800">{data.category}</span>
               <ChevronRight className="size-8" />
               <span className="text-head6 text-grey-800">{data.style}</span>
             </div>
             <h3 className="text-head3 mb-2">{data.name}</h3>
-            <div className="flex flex-row gap-[1.25rem]">
+            <div className="flex flex-col lg:flex-row gap-[1.25rem]">
               <WishListButton alcoholId={id} initialIsWish={data.isWish} />
               <TastingNoteButton />
             </div>
