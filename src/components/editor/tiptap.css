@@ -356,6 +356,72 @@
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
 }
 
+/* 투표 스타일 */
+.ProseMirror .poll-wrapper {
+  margin: 1rem 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background-color: #ffffff;
+  padding: 1rem;
+  transition: all 0.2s;
+}
+
+.ProseMirror .poll-wrapper:hover {
+  border-color: #d1d5db;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+}
+
+.ProseMirror .poll-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.ProseMirror .poll-title {
+  font-weight: 600;
+  font-size: 1rem;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror .poll-end-time {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.ProseMirror .poll-items {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.ProseMirror .poll-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  transition: background-color 0.2s;
+}
+
+.ProseMirror .poll-item:hover {
+  background-color: #f9fafb;
+}
+
+.ProseMirror .poll-item input[type="radio"],
+.ProseMirror .poll-item input[type="checkbox"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.ProseMirror .poll-item label {
+  font-size: 0.875rem;
+  color: #111827;
+  cursor: default;
+  flex: 1;
+}
+
 /* 모바일 반응형 (640px 이하) */
 @media (max-width: 640px) {
   .ProseMirror .bookmark-content {

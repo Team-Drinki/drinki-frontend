@@ -43,6 +43,8 @@ import {
   Cloud,
   FolderPlus,
   Search,
+  Plus,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,6 +55,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { useState, useEffect, useRef } from 'react';
 
 interface RichTextEditorProps {
@@ -82,6 +94,13 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
   const [isImageSelected, setIsImageSelected] = useState(false);
   const [imageWidth, setImageWidth] = useState<string>('');
   const [imageHeight, setImageHeight] = useState<string>('');
+
+  // 투표 팝업 상태
+  const [isPollDialogOpen, setIsPollDialogOpen] = useState(false);
+  const [pollTitle, setPollTitle] = useState('');
+  const [pollItems, setPollItems] = useState<string[]>(['', '', '']);
+  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [pollEndTime, setPollEndTime] = useState('');
 
   // TextStyle 마크에 fontSize / fontFamily 속성을 붙이는 커스텀 확장
   const FontStyle = TextStyle.extend({
@@ -342,6 +361,111 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     },
   });
 
+  // 투표 노드 생성
+  const PollNode = Node.create({
+    name: 'poll',
+    group: 'block',
+    atom: true,
+    addAttributes() {
+      return {
+        title: {
+          default: null,
+        },
+        items: {
+          default: [],
+          parseHTML: element => {
+            const itemsAttr = element.getAttribute('data-items');
+            return itemsAttr ? JSON.parse(itemsAttr) : [];
+          },
+          renderHTML: attrs => {
+            return attrs.items ? { 'data-items': JSON.stringify(attrs.items) } : {};
+          },
+        },
+        allowMultiple: {
+          default: false,
+          parseHTML: element => element.getAttribute('data-allow-multiple') === 'true',
+          renderHTML: attrs => {
+            return attrs.allowMultiple ? { 'data-allow-multiple': 'true' } : {};
+          },
+        },
+        endTime: {
+          default: null,
+        },
+      };
+    },
+    parseHTML() {
+      return [
+        {
+          tag: 'div[data-type="poll"]',
+        },
+      ];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return [
+        'div',
+        mergeAttributes(HTMLAttributes, { 'data-type': 'poll', class: 'poll-wrapper' }),
+      ];
+    },
+    addNodeView() {
+      return ({ node }) => {
+        const dom = document.createElement('div');
+        dom.setAttribute('data-type', 'poll');
+        dom.className = 'poll-wrapper';
+        dom.setAttribute('data-items', JSON.stringify(node.attrs.items || []));
+        dom.setAttribute('data-allow-multiple', node.attrs.allowMultiple ? 'true' : 'false');
+        
+        const title = node.attrs.title || '투표';
+        const items = node.attrs.items || [];
+        const allowMultiple = node.attrs.allowMultiple;
+        const endTime = node.attrs.endTime;
+
+        const pollContainer = document.createElement('div');
+        pollContainer.className = 'poll-content';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'poll-title';
+        titleDiv.textContent = title;
+        pollContainer.appendChild(titleDiv);
+
+        if (endTime) {
+          const endTimeDiv = document.createElement('div');
+          endTimeDiv.className = 'poll-end-time';
+          endTimeDiv.textContent = `종료: ${new Date(endTime).toLocaleString('ko-KR')}`;
+          pollContainer.appendChild(endTimeDiv);
+        }
+
+        const itemsList = document.createElement('div');
+        itemsList.className = 'poll-items';
+
+        items.forEach((item: string, index: number) => {
+          if (!item) return;
+          
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'poll-item';
+          
+          const input = document.createElement('input');
+          input.type = allowMultiple ? 'checkbox' : 'radio';
+          input.name = 'poll-option';
+          input.id = `poll-option-${index}`;
+          input.disabled = true;
+          
+          const label = document.createElement('label');
+          label.htmlFor = `poll-option-${index}`;
+          label.textContent = item;
+          
+          itemDiv.appendChild(input);
+          itemDiv.appendChild(label);
+          itemsList.appendChild(itemDiv);
+        });
+
+        pollContainer.appendChild(itemsList);
+        dom.appendChild(pollContainer);
+
+        return { dom };
+      };
+    },
+  });
+
   // 북마크 노드 생성 (Notion 스타일)
   /*
     addAttributes() : url, title, description, image, favicon 속성 정의 
@@ -504,27 +628,62 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     }
   };
 
-  // 투표
+  // 투표 팝업 열기
   const addPoll = () => {
+    setIsPollDialogOpen(true);
+    setPollTitle('');
+    setPollItems(['', '', '']);
+    setAllowMultiple(false);
+    setPollEndTime('');
+  };
+
+  // 투표 항목 추가
+  const addPollItem = () => {
+    setPollItems([...pollItems, '']);
+  };
+
+  // 투표 항목 제거
+  const removePollItem = (index: number) => {
+    if (pollItems.length > 1) {
+      setPollItems(pollItems.filter((_, i) => i !== index));
+    }
+  };
+
+  // 투표 항목 변경
+  const updatePollItem = (index: number, value: string) => {
+    const newItems = [...pollItems];
+    newItems[index] = value;
+    setPollItems(newItems);
+  };
+
+  // 투표 생성
+  const createPoll = () => {
+    if (!pollTitle.trim()) {
+      alert('투표 제목을 입력해주세요.');
+      return;
+    }
+
+    const validItems = pollItems.filter(item => item.trim());
+    if (validItems.length < 2) {
+      alert('최소 2개 이상의 항목이 필요합니다.');
+      return;
+    }
+
     editor
       ?.chain()
       .focus()
       .insertContent({
-        type: 'taskList',
-        content: [
-          {
-            type: 'taskItem',
-            attrs: { checked: false },
-            content: [{ type: 'paragraph', content: [{ type: 'text', text: '선택지 1' }] }],
-          },
-          {
-            type: 'taskItem',
-            attrs: { checked: false },
-            content: [{ type: 'paragraph', content: [{ type: 'text', text: '선택지 2' }] }],
-          },
-        ],
+        type: 'poll',
+        attrs: {
+          title: pollTitle,
+          items: validItems,
+          allowMultiple: allowMultiple,
+          endTime: pollEndTime || null,
+        },
       })
       .run();
+
+    setIsPollDialogOpen(false);
   };
 
   // URL 감지 함수 
@@ -600,6 +759,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       VideoNode,
       FileNode,
       Bookmark,
+      PollNode,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Underline,
       Color,
@@ -1644,6 +1804,115 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         className="hidden"
         onChange={handleFileSelect}
       />
+
+      {/* 투표 팝업 */}
+      <Dialog open={isPollDialogOpen} onOpenChange={setIsPollDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>투표 만들기</DialogTitle>
+            <DialogDescription>
+              투표 제목과 항목을 입력하고 설정을 선택하세요.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* 투표 제목 */}
+            <div className="space-y-2">
+              <Label htmlFor="poll-title">투표 제목</Label>
+              <Input
+                id="poll-title"
+                value={pollTitle}
+                onChange={(e) => setPollTitle(e.target.value)}
+                placeholder="투표 제목을 입력하세요"
+              />
+            </div>
+
+            {/* 투표 항목 */}
+            <div className="space-y-2">
+              <Label>투표 항목</Label>
+              <div className="space-y-2">
+                {pollItems.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={item}
+                      onChange={(e) => updatePollItem(index, e.target.value)}
+                      placeholder={`항목 ${index + 1}`}
+                      className="flex-1"
+                    />
+                    {pollItems.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removePollItem(index)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addPollItem}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                항목 추가
+              </Button>
+            </div>
+
+            {/* 복수선택 설정 */}
+            <div className="space-y-2">
+              <Label>선택 방식</Label>
+              <RadioGroup
+                value={allowMultiple ? 'multiple' : 'single'}
+                onValueChange={(value) => setAllowMultiple(value === 'multiple')}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="single" id="single" />
+                  <Label htmlFor="single" className="font-normal cursor-pointer">
+                    단일 선택 (라디오 버튼)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="multiple" id="multiple" />
+                  <Label htmlFor="multiple" className="font-normal cursor-pointer">
+                    복수 선택 (체크박스)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* 투표 종료시간 */}
+            <div className="space-y-2">
+              <Label htmlFor="poll-end-time">투표 종료시간 (선택사항)</Label>
+              <Input
+                id="poll-end-time"
+                type="datetime-local"
+                value={pollEndTime}
+                onChange={(e) => setPollEndTime(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsPollDialogOpen(false)}
+            >
+              취소
+            </Button>
+            <Button type="button" onClick={createPoll}>
+              생성
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
