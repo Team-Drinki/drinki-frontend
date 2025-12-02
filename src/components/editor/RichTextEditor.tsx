@@ -78,6 +78,11 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
   const [isUnderlineActive, setIsUnderlineActive] = useState(false);
   const [isStrikeActive, setIsStrikeActive] = useState(false);
 
+  // 이미지 편집 상태
+  const [isImageSelected, setIsImageSelected] = useState(false);
+  const [imageWidth, setImageWidth] = useState<string>('');
+  const [imageHeight, setImageHeight] = useState<string>('');
+
   // TextStyle 마크에 fontSize / fontFamily 속성을 붙이는 커스텀 확장
   const FontStyle = TextStyle.extend({
     addAttributes() {
@@ -94,6 +99,50 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
             attrs.fontFamily ? { style: `font-family: ${attrs.fontFamily}` } : {},
         },
       };
+    },
+  });
+
+  // 이미지 확장에 width, height 속성 추가
+  const CustomImage = Image.extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        width: {
+          default: null,
+          parseHTML: element => {
+            const width = element.getAttribute('width') || element.style.width;
+            return width ? width.replace('px', '') : null;
+          },
+        },
+        height: {
+          default: null,
+          parseHTML: element => {
+            const height = element.getAttribute('height') || element.style.height;
+            return height ? height.replace('px', '') : null;
+          },
+        },
+      };
+    },
+    renderHTML({ HTMLAttributes }) {
+      const { width, height, ...rest } = HTMLAttributes;
+      const style: string[] = [];
+      
+      if (width) {
+        style.push(`width: ${width}px`);
+      }
+      if (height) {
+        style.push(`height: ${height}px`);
+      }
+      
+      return [
+        'img',
+        {
+          ...rest,
+          ...(width && { width: width }),
+          ...(height && { height: height }),
+          ...(style.length > 0 && { style: style.join('; ') }),
+        },
+      ];
     },
   });
 
@@ -294,6 +343,19 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
   });
 
   // 북마크 노드 생성 (Notion 스타일)
+  /*
+    addAttributes() : url, title, description, image, favicon 속성 정의 
+    parseHTML() : data-type="bookmark" 태그 파싱
+    renderHTML() : data-type="bookmark" 태그 렌더링
+    addNodeView() : bookmark-wrapper 요소 생성 및 하위 요소 추가
+    isValidUrl() : URL 유효성 검증
+    convertUrlToBookmark() : URL를 북마크 데이터로 변환 -> domain, favicon 추출
+
+    handlePaste() : URL 붙여넣기 시 북마크 변환
+    handleDrop() : URL 드래그 앤 드롭 시 북마크 변환
+    hnadleKeyDown() : Enter 키를 눌렀을 때 URL인지 확인 -> 북마크 변환
+
+  */
   const Bookmark = Node.create({
     name: 'bookmark',
     group: 'block',
@@ -530,7 +592,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     extensions: [
       StarterKit,
       FontStyle,
-      Image,
+      CustomImage,
       Link.configure({
         openOnClick: false,
         autolink: false, // 자동 링크 변환 비활성화
@@ -578,6 +640,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       }
     },
     
+    
     onSelectionUpdate: ({ editor }) => {
       // 선택 영역 변경 시 스타일 상태 업데이트
       if (!editor.state.selection.empty) {
@@ -585,6 +648,65 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         setIsItalicActive(editor.isActive('italic'));
         setIsUnderlineActive(editor.isActive('underline'));
         setIsStrikeActive(editor.isActive('strike'));
+      }
+      
+      // 이미지 선택 상태 업데이트
+      const isImageActive = editor.isActive('image');
+      setIsImageSelected(isImageActive);
+      
+      if (isImageActive) {
+        const attrs = editor.getAttributes('image');
+        
+        // 이미지의 실제 크기를 가져오기
+        const getImageActualSize = () => {
+          // 선택된 이미지 DOM 요소 찾기 (ProseMirror-selectednode 클래스 사용)
+          const selectedImg = editor.view.dom.querySelector('img.ProseMirror-selectednode') as HTMLImageElement;
+          
+          if (selectedImg) {
+            // 이미지가 로드되었는지 확인
+            if (selectedImg.complete && selectedImg.naturalWidth > 0) {
+              // width/height 속성이 설정되어 있으면 그것을 사용, 없으면 기본값 800x400 사용
+              return {
+                width: attrs.width || '800',
+                height: attrs.height || '400',
+              };
+            } else {
+              // 이미지가 아직 로드되지 않았으면 로드 대기
+              const handleLoad = () => {
+                if (editor.isActive('image')) {
+                  const currentAttrs = editor.getAttributes('image');
+                  if (!currentAttrs.width && !currentAttrs.height) {
+                    setImageWidth('800');
+                    setImageHeight('400');
+                  }
+                }
+                selectedImg.removeEventListener('load', handleLoad);
+              };
+              selectedImg.addEventListener('load', handleLoad);
+              
+              // 이미 로드된 경우에도 확인
+              if (selectedImg.naturalWidth > 0) {
+                return {
+                  width: attrs.width || '800',
+                  height: attrs.height || '400',
+                };
+              }
+            }
+          }
+          
+          // DOM 요소를 찾지 못한 경우: 속성에 있으면 사용, 없으면 기본값 800x400
+          return {
+            width: attrs.width || '800',
+            height: attrs.height || '400',
+          };
+        };
+        
+        const sizes = getImageActualSize();
+        setImageWidth(sizes.width);
+        setImageHeight(sizes.height);
+      } else {
+        setImageWidth('');
+        setImageHeight('');
       }
     },
     editorProps: {
@@ -1059,8 +1181,13 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     // Blob URL 생성
     const imageUrl = URL.createObjectURL(file);
     
-    // 이미지를 에디터에 삽입
-    editor.chain().focus().setImage({ src: imageUrl, alt: '이미지' }).run();
+    // 이미지를 에디터에 삽입 (기본 크기 800x400)
+    editor.chain().focus().setImage({ 
+      src: imageUrl, 
+      alt: '이미지',
+      width: '800',
+      height: '400'
+    } as any).run();
 
     // input 초기화 (같은 파일을 다시 선택할 수 있도록)
     e.target.value = '';
@@ -1142,6 +1269,52 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
   const addCodeBlock = () => editor.chain().focus().toggleCodeBlock().run();
   const addTable = () =>
     editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+
+  // 이미지 크기 변경
+  const handleImageSizeChange = () => {
+    if (!editor || !isImageSelected) return;
+    
+    const width = imageWidth.trim();
+    const height = imageHeight.trim();
+    
+    // 현재 이미지 속성 가져오기
+    const currentAttrs = editor.getAttributes('image');
+    
+    const attrs: any = {
+      ...currentAttrs,
+    };
+    
+    if (width && !isNaN(Number(width)) && Number(width) > 0) {
+      attrs.width = width;
+    } else if (width === '') {
+      // 빈 값이면 width 제거
+      attrs.width = null;
+    }
+    
+    if (height && !isNaN(Number(height)) && Number(height) > 0) {
+      attrs.height = height;
+    } else if (height === '') {
+      // 빈 값이면 height 제거
+      attrs.height = null;
+    }
+    
+    editor.chain().focus().setImage(attrs).run();
+  };
+
+  const handleImageWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageWidth(e.target.value);
+  };
+
+  const handleImageHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageHeight(e.target.value);
+  };
+
+  const handleImageSizeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleImageSizeChange();
+    }
+  };
 
   return (
     <div className="border border-brown-200 rounded-lg overflow-hidden">
@@ -1408,6 +1581,38 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
           </Button>
         </div>
       </div>
+
+      {/* 이미지 편집 UI */}
+      {isImageSelected && (
+        <div className="p-3 border-b border-brown-200 bg-gray-50">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-brown-700">이미지 크기:</span>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={imageWidth}
+                onChange={handleImageWidthChange}
+                onBlur={handleImageSizeChange}
+                onKeyDown={handleImageSizeKeyDown}
+                placeholder="800"
+                className="w-20 h-8 text-xs text-center image-size-input"
+                min="1"
+              />
+              <span className="text-sm text-brown-500">×</span>
+              <Input
+                type="number"
+                value={imageHeight}
+                onChange={handleImageHeightChange}
+                onBlur={handleImageSizeChange}
+                onKeyDown={handleImageSizeKeyDown}
+                placeholder="400"
+                className="w-20 h-8 text-xs text-center image-size-input"
+                min="1"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 에디터 본문 */}
       <div className="p-4 min-h-96">

@@ -94,6 +94,31 @@
   max-width: 100%;
   height: auto;
   margin: 1rem 0;
+  cursor: pointer;
+  transition: border 0.2s;
+}
+
+/* 이미지 hover 시 커서 변경 */
+.ProseMirror img:hover {
+  cursor: pointer;
+}
+
+/* 이미지 선택(active) 상태일 때 녹색 border */
+.ProseMirror img.ProseMirror-selectednode {
+  border: 2px solid #22c55e;
+  border-radius: 4px;
+}
+
+/* 이미지 크기 입력 필드 - 스피너 제거 */
+.image-size-input::-webkit-inner-spin-button,
+.image-size-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  appearance: none;
+  margin: 0;
+}
+
+.image-size-input {
+  -moz-appearance: textfield;
 }
 
 /* 비디오 플레이어 (16:9 비율 유지) */
