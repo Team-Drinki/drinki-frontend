@@ -4,6 +4,7 @@ import { Inter } from 'next/font/google';
 import { cn } from '@/lib/utils';
 import ReactQueryProvider from '@/lib/ReactQueryProvider';
 import SessionProvider from '@/components/SessionProvider';
+import { Toaster } from '@/components/ui/sonner';
 import AppWrapper from './AppWrapper';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -20,6 +21,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <ReactQueryProvider>
           <SessionProvider>
             <AppWrapper>{children}</AppWrapper>
+            <Toaster position="top-center" richColors />
           </SessionProvider>
         </ReactQueryProvider>
       </body>

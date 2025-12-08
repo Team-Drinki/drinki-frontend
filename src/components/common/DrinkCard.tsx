@@ -21,14 +21,20 @@ export default function DrinkCard({
   author,
   imageUrl,
   avatarUrl,
-  likes,
-  views,
-  comments,
+      likes,
+      views,
+      comments,
 }: DrinkCardProps) {
   return (
     <Card className="w-[24rem] h-[18rem] flex flex-col items-start rounded-xl overflow-hidden gap-0 p-0">
       <div className="relative w-full h-[13rem]">
-        <Image src={imageUrl} alt={title} fill className="object-cover" />
+        <Image
+          src={imageUrl}
+          alt={title}
+          fill
+          className="object-cover"
+          sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 384px"
+        />
         <div className="absolute text-caption top-2.5 right-2.5 bg-yellow-100 px-2 py-1 rounded-[0.375rem] flex items-center gap-1">
           <Heart />
           {likes}
