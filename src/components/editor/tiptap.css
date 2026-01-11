@@ -1,18 +1,31 @@
-/* TipTap Editor Styles */
+/* =========================================================
+   TipTap / ProseMirror Editor Styles
+   - 기본 에디터 레이아웃
+   - 타이포/리스트/인용구/링크/코드
+   - 미디어(이미지/비디오)
+   - 임베드(북마크/파일/투표)
+   - 테이블(스크롤/드래그 셀 선택/컬럼 리사이즈)
+   - 모바일 반응형
+   ========================================================= */
 
-/* 에디터 기본 스타일 */
+
+/* =========================
+   1) Editor Base
+   ========================= */
+
+/* 에디터 기본 박스: 포커스 외곽선 제거 + 최소 높이 + 패딩 */
 .ProseMirror {
   outline: none;
   min-height: 300px;
   padding: 1rem;
 }
 
-/* 폰트 크기 적용 시 줄 간격 */
+/* 폰트 크기 style이 직접 들어간 요소의 줄간격 보정 */
 .ProseMirror [style*="font-size"] {
   line-height: 1.4;
 }
 
-/* 빈 에디터 플레이스홀더 텍스트 */
+/* 빈 에디터의 placeholder (첫 문단이 비어있을 때만 표시) */
 .ProseMirror p.is-editor-empty:first-child::before {
   color: #adb5bd;
   content: attr(data-placeholder);
@@ -21,20 +34,29 @@
   pointer-events: none;
 }
 
-/* 제목 스타일 (h1, h2) */
+
+/* =========================
+   2) Typography (Headings)
+   ========================= */
+
 .ProseMirror h1 {
   font-size: 1.5rem;
   font-weight: bold;
   margin: 1rem 0 0.5rem 0;
 }
+
 .ProseMirror h2 {
   font-size: 1.25rem;
   font-weight: bold;
   margin: 0.75rem 0 0.5rem 0;
 }
 
-/* 리스트 스타일 */
-/* Bullet List (점 리스트) */
+
+/* =========================
+   3) Lists
+   ========================= */
+
+/* Bullet List */
 .ProseMirror ul {
   list-style-type: disc;
   list-style-position: outside;
@@ -47,7 +69,7 @@
   margin: 0.25rem 0;
 }
 
-/* Ordered List (숫자 리스트) */
+/* Ordered List */
 .ProseMirror ol {
   list-style-type: decimal;
   list-style-position: outside;
@@ -60,26 +82,30 @@
   margin: 0.25rem 0;
 }
 
-/* 중첩 리스트 (2단계, 3단계) */
+/* Nested Lists */
 .ProseMirror ul ul {
-  list-style-type: circle; /* 2단계: 원형 점 */
+  list-style-type: circle; /* 2단계: 원형 */
   margin-top: 0.25rem;
   margin-bottom: 0.25rem;
 }
 
 .ProseMirror ul ul ul {
-  list-style-type: square; /* 3단계: 사각형 점 */
+  list-style-type: square; /* 3단계: 사각 */
 }
 
 .ProseMirror ol ol {
-  list-style-type: lower-alpha; /* 2단계: 소문자 알파벳 */
+  list-style-type: lower-alpha; /* 2단계: a, b, c */
 }
 
 .ProseMirror ol ol ol {
-  list-style-type: lower-roman; /* 3단계: 소문자 로마숫자 */
+  list-style-type: lower-roman; /* 3단계: i, ii, iii */
 }
 
-/* 인용구 스타일 */
+
+/* =========================
+   4) Blockquote / Divider
+   ========================= */
+
 .ProseMirror blockquote {
   border-left: 3px solid #e5e7eb;
   padding-left: 1rem;
@@ -88,8 +114,55 @@
   color: #6b7280;
 }
 
-/* 미디어 & 링크 */
-/* 이미지 */
+.ProseMirror hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1rem 0;
+}
+
+
+/* =========================
+   5) Links
+   ========================= */
+
+.ProseMirror a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.ProseMirror a:hover {
+  color: #2563eb;
+}
+
+
+/* =========================
+   6) Code (Inline / Block)
+   ========================= */
+
+/* 코드 블록 */
+.ProseMirror pre {
+  background-color: #f3f4f6;
+  border-radius: 0.375rem;
+  padding: 1rem;
+  margin: 1rem 0;
+  overflow-x: auto;
+}
+
+/* 인라인 코드 */
+.ProseMirror code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: "Courier New", monospace;
+  font-size: 0.875rem;
+}
+
+
+/* =========================
+   7) Media: Image / Video
+   ========================= */
+
+/* 이미지: 반응형 + 클릭 가능 UX */
 .ProseMirror img {
   max-width: 100%;
   height: auto;
@@ -98,18 +171,17 @@
   transition: border 0.2s;
 }
 
-/* 이미지 hover 시 커서 변경 */
 .ProseMirror img:hover {
   cursor: pointer;
 }
 
-/* 이미지 선택(active) 상태일 때 녹색 border */
+/* 이미지 선택 상태(노드 선택): 초록 테두리 표시 */
 .ProseMirror img.ProseMirror-selectednode {
   border: 2px solid #22c55e;
   border-radius: 4px;
 }
 
-/* 이미지 크기 입력 필드 - 스피너 제거 */
+/* 이미지 크기 입력 필드(스피너 제거) */
 .image-size-input::-webkit-inner-spin-button,
 .image-size-input::-webkit-outer-spin-button {
   -webkit-appearance: none;
@@ -121,15 +193,16 @@
   -moz-appearance: textfield;
 }
 
-/* 비디오 플레이어 (16:9 비율 유지) */
+/* 비디오 래퍼: 16:9 비율 유지 */
 .ProseMirror .video-wrapper {
   position: relative;
-  padding-bottom: 56.25%; /* 16:9 비율 */
+  padding-bottom: 56.25%;
   height: 0;
   margin: 1rem 0;
   overflow: hidden;
   border-radius: 8px;
 }
+
 .ProseMirror .video-wrapper video {
   position: absolute;
   top: 0;
@@ -138,61 +211,12 @@
   height: 100%;
 }
 
-/* 링크 */
-.ProseMirror a {
-  color: #3b82f6;
-  text-decoration: underline;
-}
-.ProseMirror a:hover {
-  color: #2563eb;
-}
 
-/* 구분선 (수평선) */
-.ProseMirror hr {
-  border: none;
-  border-top: 1px solid #e5e7eb;
-  margin: 1rem 0;
-}
+/* =========================
+   8) Embeds: Bookmark / File / Poll
+   ========================= */
 
-/* 테이블 */
-.ProseMirror table {
-  border-collapse: collapse;
-  margin: 1rem 0;
-  width: 100%;
-  table-layout: fixed;
-}
-.ProseMirror th,
-.ProseMirror td {
-  border: 1px solid #e5e7eb;
-  padding: 0.5rem;
-  text-align: left;
-  min-width: 100px;
-  position: relative;
-}
-.ProseMirror th {
-  background-color: #f9fafb; /* 헤더 배경색 */
-  font-weight: bold;
-}
-
-/* 코드 블록 */
-.ProseMirror pre {
-  background-color: #f3f4f6;
-  border-radius: 0.375rem;
-  padding: 1rem;
-  margin: 1rem 0;
-  overflow-x: auto;
-}
-/* 인라인 코드 */
-.ProseMirror code {
-  background-color: #f3f4f6;
-  padding: 0.125rem 0.25rem;
-  border-radius: 0.25rem;
-  font-family: 'Courier New', monospace;
-  font-size: 0.875rem;
-}
-
-/* 북마크 스타일 (Notion 스타일) */
-/* URL을 붙여넣으면 자동으로 북마크 카드로 변환 */
+/* ---------- Bookmark (Notion-like) ---------- */
 .ProseMirror .bookmark-wrapper {
   margin: 1rem 0;
   width: 100%;
@@ -251,7 +275,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* 최대 2줄 */
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -262,7 +286,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   display: -webkit-box;
-  -webkit-line-clamp: 2; /* 최대 2줄 */
+  -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
 }
 
@@ -286,7 +310,8 @@
   background-color: #f3f4f6;
 }
 
-/* 파일 임베디드 스타일 */
+
+/* ---------- File Embed ---------- */
 .ProseMirror .file-wrapper {
   margin: 1rem 0;
   border: 1px solid #e5e7eb;
@@ -356,7 +381,8 @@
   box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.1);
 }
 
-/* 투표 스타일 */
+
+/* ---------- Poll Embed ---------- */
 .ProseMirror .poll-wrapper {
   margin: 1rem 0;
   border: 1px solid #e5e7eb;
@@ -422,25 +448,97 @@
   flex: 1;
 }
 
-/* 모바일 반응형 (640px 이하) */
+
+/* =========================
+   9) Table (FINAL)
+   - TipTap Table + column resizing
+   - Drag selection highlighting
+   ========================= */
+
+/* 표가 가로로 길어질 때 스크롤 허용 */
+.ProseMirror .tableWrapper {
+  overflow-x: auto;
+  margin: 12px 0;
+}
+
+/* 표 레이아웃: fixed는 컬럼 리사이즈 시 흔들림 방지 */
+.ProseMirror table {
+  border-collapse: collapse;
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* 셀 기본 스타일 + 선택/리사이즈 오버레이 기준점 */
+.ProseMirror th,
+.ProseMirror td {
+  border: 1px solid #e5e7eb;
+  padding: 10px;
+  vertical-align: top;
+  position: relative;
+  min-width: 120px;
+}
+
+/* 헤더 셀 강조 */
+.ProseMirror th {
+  background: rgba(0, 0, 0, 0.04);
+  font-weight: 600;
+}
+
+/* 드래그로 셀 선택 시, 셀 위에 하이라이트 오버레이 */
+.ProseMirror .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(34, 197, 94, 0.18);
+  pointer-events: none;
+}
+
+/* 선택된 셀 외곽선 강조 */
+.ProseMirror .selectedCell {
+  outline: 2px solid rgba(34, 197, 94, 0.45);
+  outline-offset: -2px;
+}
+
+/* 컬럼 리사이즈 핸들(시각적 힌트) */
+.ProseMirror .column-resize-handle {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  bottom: 0;
+  width: 6px;
+  background: rgba(34, 197, 94, 0.15);
+  pointer-events: none;
+}
+
+/* 리사이즈 중 커서 */
+.ProseMirror.resize-cursor {
+  cursor: col-resize;
+}
+
+
+/* =========================
+   10) Responsive (Mobile)
+   ========================= */
+
 @media (max-width: 640px) {
+  /* 북마크: 모바일에서는 세로로 쌓이게 */
   .ProseMirror .bookmark-content {
     flex-direction: column;
   }
-  
+
   .ProseMirror .bookmark-image {
     width: 100%;
     height: 200px;
   }
-  
+
+  /* 파일 임베드: 버튼이 아래로 내려가도 자연스럽게 */
   .ProseMirror .file-content {
     flex-direction: column;
     align-items: flex-start;
   }
-  
+
   .ProseMirror .file-download {
     width: 100%;
     text-align: center;
   }
 }
-

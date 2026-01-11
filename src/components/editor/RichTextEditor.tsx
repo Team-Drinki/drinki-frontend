@@ -1,6 +1,7 @@
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
+import {CellSelection} from 'prosemirror-tables';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -764,7 +765,11 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       Underline,
       Color,
       Highlight,
-      TableExtension.configure({ resizable: true }),
+      TableExtension.configure({ resizable: true,
+        handleWidth: 6,          // 드래그 잡는 폭
+        cellMinWidth: 120,       // 너무 얇아지지 않게
+        lastColumnResizable: true, // 마지막 열도 리사이즈 가능하게
+       }),
       TableRow,
       TableHeader,
       TableCell,
@@ -923,7 +928,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       },
       handleKeyDown: (view, event) => {
         if (!editor) return false;
-        // Enter 키를 눌렀을 때 현재 줄이 URL인지 확인
+        // Enter 키를 눌렀을 때 현재 줄이 URL인지 확
         if (event.key === 'Enter') {
           const { state } = view;
           const { selection } = state;
@@ -985,11 +990,105 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
             }, 100);
           }
         }
+        
         return false;
       },
     },
     immediatelyRender: false,
   });
+
+  type CanTableState = {
+  addRowBefore: boolean;
+  addRowAfter: boolean;
+  deleteRow: boolean;
+  addColumnBefore: boolean;
+  addColumnAfter: boolean;
+  deleteColumn: boolean;
+  toggleHeaderRow: boolean;
+  toggleHeaderColumn: boolean;
+  toggleHeaderCell: boolean;
+  mergeCells: boolean;
+  splitCell: boolean;
+  deleteTable: boolean;
+};
+
+const initialCanTable: CanTableState = {
+  addRowBefore: false,
+  addRowAfter: false,
+  deleteRow: false,
+  addColumnBefore: false,
+  addColumnAfter: false,
+  deleteColumn: false,
+  toggleHeaderRow: false,
+  toggleHeaderColumn: false,
+  toggleHeaderCell: false,
+  mergeCells: false,
+  splitCell: false,
+  deleteTable: false,
+};
+
+const [isTableActive, setIsTableActive] = useState(false);
+const [canTable, setCanTable] = useState<CanTableState>(initialCanTable);
+
+const computeCanTable = (ed: any): CanTableState => {
+  // can 체크에는 focus() 빼는 걸 추천 (부작용 방지)
+  return {
+    addRowBefore: ed.can().chain().addRowBefore().run(),
+    addRowAfter: ed.can().chain().addRowAfter().run(),
+    deleteRow: ed.can().chain().deleteRow().run(),
+
+    addColumnBefore: ed.can().chain().addColumnBefore().run(),
+    addColumnAfter: ed.can().chain().addColumnAfter().run(),
+    deleteColumn: ed.can().chain().deleteColumn().run(),
+
+    toggleHeaderRow: ed.can().chain().toggleHeaderRow().run(),
+    toggleHeaderColumn: ed.can().chain().toggleHeaderColumn().run(),
+    toggleHeaderCell: ed.can().chain().toggleHeaderCell().run(),
+
+    mergeCells: ed.can().chain().mergeCells().run(),
+    splitCell: ed.can().chain().splitCell().run(),
+
+    deleteTable: ed.can().chain().deleteTable().run(),
+  };
+};
+
+const shallowEqual = (a: CanTableState, b: CanTableState) => {
+  for (const k in a) {
+    const key = k as keyof CanTableState;
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+};
+
+useEffect(() => {
+  if (!editor) return;
+
+  const refresh = () => {
+    const active = editor.isActive('table');
+    setIsTableActive(active);
+
+    if (!active) {
+      // 표 밖이면 false로 정리(원하면 유지해도 됨)
+      setCanTable(prev => (shallowEqual(prev, initialCanTable) ? prev : initialCanTable));
+      return;
+    }
+
+    const next = computeCanTable(editor);
+    setCanTable(prev => (shallowEqual(prev, next) ? prev : next));
+  };
+
+  // 최초 1회
+  refresh();
+
+  // selection 움직일 때 / 문서 변경될 때 갱신
+  editor.on('selectionUpdate', refresh);
+  editor.on('transaction', refresh);
+
+  return () => {
+    editor.off('selectionUpdate', refresh);
+    editor.off('transaction', refresh);
+  };
+}, [editor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -1427,8 +1526,30 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     if (url) editor.chain().focus().setLink({ href: url }).run();
   };
   const addCodeBlock = () => editor.chain().focus().toggleCodeBlock().run();
-  const addTable = () =>
-    editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+// 표 삽입
+const addTable = () =>
+  editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+
+// 표 편집 (행/열/헤더/병합 등)
+const table = {
+  addRowBefore: () => editor.chain().focus().addRowBefore().run(),
+  addRowAfter: () => editor.chain().focus().addRowAfter().run(),
+  deleteRow: () => editor.chain().focus().deleteRow().run(),
+
+  addColumnBefore: () => editor.chain().focus().addColumnBefore().run(),
+  addColumnAfter: () => editor.chain().focus().addColumnAfter().run(),
+  deleteColumn: () => editor.chain().focus().deleteColumn().run(),
+
+  toggleHeaderRow: () => editor.chain().focus().toggleHeaderRow().run(),
+  toggleHeaderColumn: () => editor.chain().focus().toggleHeaderColumn().run(),
+  toggleHeaderCell: () => editor.chain().focus().toggleHeaderCell().run(),
+
+  mergeCells: () => editor.chain().focus().mergeCells().run(),
+  splitCell: () => editor.chain().focus().splitCell().run(),
+
+  deleteTable: () => editor.chain().focus().deleteTable().run(),
+};
+
 
   // 이미지 크기 변경
   const handleImageSizeChange = () => {
@@ -1741,6 +1862,133 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
           </Button>
         </div>
       </div>
+{/* 표 편집 UI */}
+{isTableActive && (
+  <div className="p-3 border-b border-brown-200 bg-gray-50">
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-sm text-brown-700">표 편집:</span>
+
+      {/* 행 */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={table.addRowBefore}
+        disabled={!canTable.addRowBefore}
+        className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+      >
+        행 위 추가
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={table.addRowAfter}
+        disabled={!canTable.addRowAfter}
+        className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+      >
+        행 아래 추가
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={table.deleteRow}
+        disabled={!canTable.deleteRow}
+        className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+      >
+        행 삭제
+      </Button>
+
+      <span className="mx-1 text-brown-300">|</span>
+
+      {/* 열 */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={table.addColumnBefore}
+        disabled={!canTable.addColumnBefore}
+        className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+      >
+        열 왼쪽 추가
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={table.addColumnAfter}
+        disabled={!canTable.addColumnAfter}
+        className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+      >
+        열 오른쪽 추가
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={table.deleteColumn}
+        disabled={!canTable.deleteColumn}
+        className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+      >
+        열 삭제
+      </Button>
+
+      <span className="mx-1 text-brown-300">|</span>
+
+      {/* 헤더 */}
+      <Button
+        variant={editor.isActive('tableHeader') ? 'default' : 'ghost'}
+        size="sm"
+        onClick={table.toggleHeaderRow}
+        disabled={!canTable.toggleHeaderRow}
+        className="h-8 px-2"
+      >
+        헤더 행
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={table.toggleHeaderColumn}
+        disabled={!canTable.toggleHeaderColumn}
+        className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+      >
+        헤더 열
+      </Button>
+
+      <span className="mx-1 text-brown-300">|</span>
+
+      {/* 병합/분할 */}
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={table.mergeCells}
+        disabled={!canTable.mergeCells}
+        className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+      >
+        셀 병합
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={table.splitCell}
+        disabled={!canTable.splitCell}
+        className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+      >
+        셀 분할
+      </Button>
+
+      <span className="mx-1 text-brown-300">|</span>
+
+      {/* 표 삭제 */}
+      <Button
+        variant="destructive"
+        size="sm"
+        onClick={table.deleteTable}
+        disabled={!canTable.deleteTable}
+        className="h-8 px-2"
+      >
+        표 삭제
+      </Button>
+    </div>
+  </div>
+)}
+
+      
 
       {/* 이미지 편집 UI */}
       {isImageSelected && (
@@ -1773,6 +2021,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
           </div>
         </div>
       )}
+      
 
       {/* 에디터 본문 */}
       <div className="p-4 min-h-96">
