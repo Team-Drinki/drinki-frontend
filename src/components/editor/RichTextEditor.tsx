@@ -1031,7 +1031,6 @@ const [isTableActive, setIsTableActive] = useState(false);
 const [canTable, setCanTable] = useState<CanTableState>(initialCanTable);
 
 const computeCanTable = (ed: any): CanTableState => {
-  // can 체크에는 focus() 빼는 걸 추천 (부작용 방지)
   return {
     addRowBefore: ed.can().chain().addRowBefore().run(),
     addRowAfter: ed.can().chain().addRowAfter().run(),
