@@ -1865,8 +1865,6 @@ const table = {
 {isTableActive && (
   <div className="p-3 border-b border-brown-200 bg-gray-50">
     <div className="flex flex-wrap items-center gap-2">
-      <span className="text-sm text-brown-700">표 편집:</span>
-
       {/* 행 */}
       <Button
         variant="ghost"
@@ -1895,8 +1893,6 @@ const table = {
       >
         행 삭제
       </Button>
-
-      <span className="mx-1 text-brown-300">|</span>
 
       {/* 열 */}
       <Button
@@ -1927,8 +1923,6 @@ const table = {
         열 삭제
       </Button>
 
-      <span className="mx-1 text-brown-300">|</span>
-
       {/* 헤더 */}
       <Button
         variant={editor.isActive('tableHeader') ? 'default' : 'ghost'}
@@ -1949,8 +1943,6 @@ const table = {
         헤더 열
       </Button>
 
-      <span className="mx-1 text-brown-300">|</span>
-
       {/* 병합/분할 */}
       <Button
         variant="ghost"
@@ -1970,8 +1962,6 @@ const table = {
       >
         셀 분할
       </Button>
-
-      <span className="mx-1 text-brown-300">|</span>
 
       {/* 표 삭제 */}
       <Button
