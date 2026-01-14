@@ -249,7 +249,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     },
   });
 
-  // 파일 노드 생성 (임베디드 형식)
+  // 파일 노드 생성 (임베드 형식)
   const FileNode = Node.create({
     name: 'file',
     group: 'block',
@@ -1942,6 +1942,7 @@ const table = {
       >
         헤더 열
       </Button>
+
 
       {/* 병합/분할 */}
       <Button
