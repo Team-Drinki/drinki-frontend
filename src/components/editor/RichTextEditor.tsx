@@ -1614,9 +1614,42 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
   const addQuote = () => editor.chain().focus().toggleBlockquote().run();
   const addDivider = () => editor.chain().focus().setHorizontalRule().run();
+  //링크용 URL 정규화 (상대경로 방지)
+  const normalizeUrl = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+
+    // mailto/tel 등도 필요하면 허용
+    if (/^(mailto:|tel:)/i.test(trimmed)) return trimmed;
+
+    // 이미 http(s)면 그대로
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+
+    // 나머지는 https:// 붙이기
+    return `https://${trimmed}`;
+  };
+
   const setLink = () => {
-    const url = window.prompt('링크 URL을 입력하세요:');
-    if (url) editor.chain().focus().setLink({ href: url }).run();
+    if (!editor) return;
+
+    const input = window.prompt('링크 URL을 입력하세요:');
+    if (!input) return;
+
+    // https:// 붙여서 절대 URL로 만들기
+    const normalized = normalizeUrl(input);
+    if (!normalized) return;
+
+    if (!isValidUrl(normalized)) {
+      alert('유효한 URL이 아니에요.');
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange('link') // 이미 링크면 범위 확장해서 수정
+      .setLink({ href: normalized })
+      .run();
   };
   const addCodeBlock = () => editor.chain().focus().toggleCodeBlock().run();
   // 표 삽입
