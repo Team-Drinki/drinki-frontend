@@ -1,6 +1,7 @@
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
+import { CellSelection, TableMap } from 'prosemirror-tables';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -43,6 +44,8 @@ import {
   Cloud,
   FolderPlus,
   Search,
+  Plus,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -53,6 +56,16 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { useState, useEffect, useRef } from 'react';
 
 interface RichTextEditorProps {
@@ -71,12 +84,24 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
   const imageInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // 텍스트 스타일 활성화 상태 (선택된 텍스트가 없어도 활성화 가능)
   const [isBoldActive, setIsBoldActive] = useState(false);
   const [isItalicActive, setIsItalicActive] = useState(false);
   const [isUnderlineActive, setIsUnderlineActive] = useState(false);
   const [isStrikeActive, setIsStrikeActive] = useState(false);
+
+  // 이미지 편집 상태
+  const [isImageSelected, setIsImageSelected] = useState(false);
+  const [imageWidth, setImageWidth] = useState<string>('');
+  const [imageHeight, setImageHeight] = useState<string>('');
+
+  // 투표 팝업 상태
+  const [isPollDialogOpen, setIsPollDialogOpen] = useState(false);
+  const [pollTitle, setPollTitle] = useState('');
+  const [pollItems, setPollItems] = useState<string[]>(['', '', '']);
+  const [allowMultiple, setAllowMultiple] = useState(false);
+  const [pollEndTime, setPollEndTime] = useState('');
 
   // TextStyle 마크에 fontSize / fontFamily 속성을 붙이는 커스텀 확장
   const FontStyle = TextStyle.extend({
@@ -97,7 +122,51 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     },
   });
 
-  // 비디오 노드 생성 
+  // 이미지 확장에 width, height 속성 추가
+  const CustomImage = Image.extend({
+    addAttributes() {
+      return {
+        ...this.parent?.(),
+        width: {
+          default: null,
+          parseHTML: element => {
+            const width = element.getAttribute('width') || element.style.width;
+            return width ? width.replace('px', '') : null;
+          },
+        },
+        height: {
+          default: null,
+          parseHTML: element => {
+            const height = element.getAttribute('height') || element.style.height;
+            return height ? height.replace('px', '') : null;
+          },
+        },
+      };
+    },
+    renderHTML({ HTMLAttributes }) {
+      const { width, height, ...rest } = HTMLAttributes;
+      const style: string[] = [];
+
+      if (width) {
+        style.push(`width: ${width}px`);
+      }
+      if (height) {
+        style.push(`height: ${height}px`);
+      }
+
+      return [
+        'img',
+        {
+          ...rest,
+          ...(width && { width: width }),
+          ...(height && { height: height }),
+          ...(style.length > 0 && { style: style.join('; ') }),
+        },
+      ];
+    },
+  });
+
+  // 비디오 노드 생성
   const VideoNode = Node.create({
     name: 'video',
     group: 'block',
@@ -121,7 +190,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       return [
         {
           tag: 'div.video-wrapper',
-          getAttrs: (node) => {
+          getAttrs: node => {
             if (typeof node === 'string') return false;
             const el = node as HTMLElement;
             const video = el.querySelector('video');
@@ -134,7 +203,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         },
         {
           tag: 'div[class*="video-wrapper"]',
-          getAttrs: (node) => {
+          getAttrs: node => {
             if (typeof node === 'string') return false;
             const el = node as HTMLElement;
             const video = el.querySelector('video');
@@ -147,7 +216,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         },
         {
           tag: 'video',
-          getAttrs: (node) => {
+          getAttrs: node => {
             if (typeof node === 'string') return false;
             const el = node as HTMLElement;
             const src = el.getAttribute('src');
@@ -160,12 +229,13 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       if (!HTMLAttributes.src) {
         return ['div', { class: 'video-wrapper' }];
       }
-      
+
       return [
         'div',
         {
           class: 'video-wrapper',
-          style: 'position: relative; padding-bottom: 56.25%; height: 0; margin: 1rem 0; overflow: hidden; border-radius: 8px;',
+          style:
+            'position: relative; padding-bottom: 56.25%; height: 0; margin: 1rem 0; overflow: hidden; border-radius: 8px;',
         },
         [
           'video',
@@ -180,7 +250,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     },
   });
 
-  // 파일 노드 생성 (임베디드 형식)
+  // 파일 노드 생성 (임베드 형식)
   const FileNode = Node.create({
     name: 'file',
     group: 'block',
@@ -189,7 +259,10 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       return {
         fileName: {
           default: null,
-          parseHTML: element => element.getAttribute('data-file-name') || element.querySelector('.file-name')?.textContent || null,
+          parseHTML: element =>
+            element.getAttribute('data-file-name') ||
+            element.querySelector('.file-name')?.textContent ||
+            null,
           renderHTML: attrs => (attrs.fileName ? { 'data-file-name': attrs.fileName } : {}),
         },
         fileSize: {
@@ -293,7 +366,125 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     },
   });
 
+  // 투표 노드 생성
+  const PollNode = Node.create({
+    name: 'poll',
+    group: 'block',
+    atom: true,
+    addAttributes() {
+      return {
+        title: {
+          default: null,
+        },
+        items: {
+          default: [],
+          parseHTML: element => {
+            const itemsAttr = element.getAttribute('data-items');
+            return itemsAttr ? JSON.parse(itemsAttr) : [];
+          },
+          renderHTML: attrs => {
+            return attrs.items ? { 'data-items': JSON.stringify(attrs.items) } : {};
+          },
+        },
+        allowMultiple: {
+          default: false,
+          parseHTML: element => element.getAttribute('data-allow-multiple') === 'true',
+          renderHTML: attrs => {
+            return attrs.allowMultiple ? { 'data-allow-multiple': 'true' } : {};
+          },
+        },
+        endTime: {
+          default: null,
+        },
+      };
+    },
+    parseHTML() {
+      return [
+        {
+          tag: 'div[data-type="poll"]',
+        },
+      ];
+    },
+    renderHTML({ HTMLAttributes }) {
+      return [
+        'div',
+        mergeAttributes(HTMLAttributes, { 'data-type': 'poll', class: 'poll-wrapper' }),
+      ];
+    },
+    addNodeView() {
+      return ({ node }) => {
+        const dom = document.createElement('div');
+        dom.setAttribute('data-type', 'poll');
+        dom.className = 'poll-wrapper';
+        dom.setAttribute('data-items', JSON.stringify(node.attrs.items || []));
+        dom.setAttribute('data-allow-multiple', node.attrs.allowMultiple ? 'true' : 'false');
+
+        const title = node.attrs.title || '투표';
+        const items = node.attrs.items || [];
+        const allowMultiple = node.attrs.allowMultiple;
+        const endTime = node.attrs.endTime;
+
+        const pollContainer = document.createElement('div');
+        pollContainer.className = 'poll-content';
+
+        const titleDiv = document.createElement('div');
+        titleDiv.className = 'poll-title';
+        titleDiv.textContent = title;
+        pollContainer.appendChild(titleDiv);
+
+        if (endTime) {
+          const endTimeDiv = document.createElement('div');
+          endTimeDiv.className = 'poll-end-time';
+          endTimeDiv.textContent = `종료: ${new Date(endTime).toLocaleString('ko-KR')}`;
+          pollContainer.appendChild(endTimeDiv);
+        }
+
+        const itemsList = document.createElement('div');
+        itemsList.className = 'poll-items';
+
+        items.forEach((item: string, index: number) => {
+          if (!item) return;
+
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'poll-item';
+
+          const input = document.createElement('input');
+          input.type = allowMultiple ? 'checkbox' : 'radio';
+          input.name = 'poll-option';
+          input.id = `poll-option-${index}`;
+          input.disabled = true;
+
+          const label = document.createElement('label');
+          label.htmlFor = `poll-option-${index}`;
+          label.textContent = item;
+
+          itemDiv.appendChild(input);
+          itemDiv.appendChild(label);
+          itemsList.appendChild(itemDiv);
+        });
+
+        pollContainer.appendChild(itemsList);
+        dom.appendChild(pollContainer);
+
+        return { dom };
+      };
+    },
+  });
+
   // 북마크 노드 생성 (Notion 스타일)
+  /*
+    addAttributes() : url, title, description, image, favicon 속성 정의 
+    parseHTML() : data-type="bookmark" 태그 파싱
+    renderHTML() : data-type="bookmark" 태그 렌더링
+    addNodeView() : bookmark-wrapper 요소 생성 및 하위 요소 추가
+    isValidUrl() : URL 유효성 검증
+    convertUrlToBookmark() : URL를 북마크 데이터로 변환 -> domain, favicon 추출
+
+    handlePaste() : URL 붙여넣기 시 북마크 변환
+    handleDrop() : URL 드래그 앤 드롭 시 북마크 변환
+    hnadleKeyDown() : Enter 키를 눌렀을 때 URL인지 확인 -> 북마크 변환
+
+  */
   const Bookmark = Node.create({
     name: 'bookmark',
     group: 'block',
@@ -358,7 +549,14 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
               ],
             ],
             HTMLAttributes.image
-              ? ['img', { src: HTMLAttributes.image, class: 'bookmark-image', alt: HTMLAttributes.title || '' }]
+              ? [
+                  'img',
+                  {
+                    src: HTMLAttributes.image,
+                    class: 'bookmark-image',
+                    alt: HTMLAttributes.title || '',
+                  },
+                ]
               : null,
           ],
         ],
@@ -442,55 +640,91 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     }
   };
 
-  // 투표
+  // 투표 팝업 열기
   const addPoll = () => {
+    setIsPollDialogOpen(true);
+    setPollTitle('');
+    setPollItems(['', '', '']);
+    setAllowMultiple(false);
+    setPollEndTime('');
+  };
+
+  // 투표 항목 추가
+  const addPollItem = () => {
+    setPollItems([...pollItems, '']);
+  };
+
+  // 투표 항목 제거
+  const removePollItem = (index: number) => {
+    if (pollItems.length > 1) {
+      setPollItems(pollItems.filter((_, i) => i !== index));
+    }
+  };
+
+  // 투표 항목 변경
+  const updatePollItem = (index: number, value: string) => {
+    const newItems = [...pollItems];
+    newItems[index] = value;
+    setPollItems(newItems);
+  };
+
+  // 투표 생성
+  const createPoll = () => {
+    if (!pollTitle.trim()) {
+      alert('투표 제목을 입력해주세요.');
+      return;
+    }
+
+    const validItems = pollItems.filter(item => item.trim());
+    if (validItems.length < 2) {
+      alert('최소 2개 이상의 항목이 필요합니다.');
+      return;
+    }
+
     editor
       ?.chain()
       .focus()
       .insertContent({
-        type: 'taskList',
-        content: [
-          {
-            type: 'taskItem',
-            attrs: { checked: false },
-            content: [{ type: 'paragraph', content: [{ type: 'text', text: '선택지 1' }] }],
-          },
-          {
-            type: 'taskItem',
-            attrs: { checked: false },
-            content: [{ type: 'paragraph', content: [{ type: 'text', text: '선택지 2' }] }],
-          },
-        ],
+        type: 'poll',
+        attrs: {
+          title: pollTitle,
+          items: validItems,
+          allowMultiple: allowMultiple,
+          endTime: pollEndTime || null,
+        },
       })
       .run();
+
+    setIsPollDialogOpen(false);
   };
 
-  // URL 감지 함수 
+  // URL 감지 함수
   const isValidUrl = (string: string): boolean => {
     try {
       const trimmed = string.trim();
       if (!trimmed || trimmed.length < 4) return false; // 너무 짧으면 URL이 아님
-      
+
       // http:// 또는 https://로 시작하는 경우
       if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
         new URL(trimmed);
         return true;
       }
-      
+
       // 공백이 포함되어 있으면 URL이 아님
       if (trimmed.includes(' ')) return false;
-      
+
       // 도메인 형식인 경우 (www.naver.com 같은) - 더 엄격한 패턴
-      const urlPattern = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.\-~!*'();:@&=+$,?#[\]%]*)*\/?$/i;
+      const urlPattern =
+        /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.\-~!*'();:@&=+$,?#[\]%]*)*\/?$/i;
       const matches = urlPattern.test(trimmed);
-      
+
       // 패턴 매칭 후 실제 URL 객체로 검증
       if (matches) {
         const testUrl = trimmed.startsWith('http') ? trimmed : `https://${trimmed}`;
         new URL(testUrl);
         return true;
       }
-      
+
       return false;
     } catch (_) {
       return false;
@@ -512,7 +746,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       // URL 객체 생성으로 유효성 최종 검증
       const urlObj = new URL(fullUrl);
       const domain = urlObj.hostname;
-      
+
       return {
         url: fullUrl,
         title: domain.replace('www.', ''),
@@ -526,11 +760,42 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     }
   };
 
+  const replaceCurrentParagraphWithBookmark = async (raw: string) => {
+    if (!editor) return false;
+
+    const trimmed = raw.trim();
+    if (!isValidUrl(trimmed)) return false;
+
+    const bookmarkData = await convertUrlToBookmark(trimmed);
+    if (!bookmarkData) return false;
+
+    const { state } = editor.view;
+    const { selection } = state;
+    const { $from } = selection;
+
+    // 현재 커서가 있는 parent가 paragraph인지 확인
+    const parent = $from.parent;
+    if (!parent || parent.type.name !== 'paragraph') return false;
+
+    // paragraph 노드 전체 범위를 잡아서 삭제 후 bookmark 삽입
+    const from = $from.before($from.depth);
+    const to = $from.after($from.depth);
+
+    editor
+      .chain()
+      .focus()
+      .deleteRange({ from, to })
+      .insertContent({ type: 'bookmark', attrs: bookmarkData })
+      .run();
+
+    return true;
+  };
+
   const editor = useEditor({
     extensions: [
       StarterKit,
       FontStyle,
-      Image,
+      CustomImage,
       Link.configure({
         openOnClick: false,
         autolink: false, // 자동 링크 변환 비활성화
@@ -538,11 +803,17 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       VideoNode,
       FileNode,
       Bookmark,
+      PollNode,
       TextAlign.configure({ types: ['heading', 'paragraph'] }),
       Underline,
       Color,
       Highlight,
-      TableExtension.configure({ resizable: true }),
+      TableExtension.configure({
+        resizable: true,
+        handleWidth: 6, // 드래그 잡는 폭
+        cellMinWidth: 120, // 너무 얇아지지 않게
+        lastColumnResizable: true, // 마지막 열도 리사이즈 가능하게
+      }),
       TableRow,
       TableHeader,
       TableCell,
@@ -563,9 +834,16 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     },
 
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
+      if (!editor || (editor as any).isDestroyed) return;
+
+      try {
+        onChange(editor.getHTML());
+      } catch (e) {
+        console.error('getHTML 실패', e);
+        return;
+      }
       updateDropdownValues();
-      
+
       // 선택된 텍스트가 있으면 스타일 상태 동기화
       if (editor.state.selection.empty) {
         // 커서만 있을 때는 state 유지 (다음 입력에 적용)
@@ -577,7 +855,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         setIsStrikeActive(editor.isActive('strike'));
       }
     },
-    
+
     onSelectionUpdate: ({ editor }) => {
       // 선택 영역 변경 시 스타일 상태 업데이트
       if (!editor.state.selection.empty) {
@@ -586,18 +864,79 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         setIsUnderlineActive(editor.isActive('underline'));
         setIsStrikeActive(editor.isActive('strike'));
       }
+
+      // 이미지 선택 상태 업데이트
+      const isImageActive = editor.isActive('image');
+      setIsImageSelected(isImageActive);
+
+      if (isImageActive) {
+        const attrs = editor.getAttributes('image');
+
+        // 이미지의 실제 크기를 가져오기
+        const getImageActualSize = () => {
+          // 선택된 이미지 DOM 요소 찾기 (ProseMirror-selectednode 클래스 사용)
+          const selectedImg = editor.view.dom.querySelector(
+            'img.ProseMirror-selectednode'
+          ) as HTMLImageElement;
+
+          if (selectedImg) {
+            // 이미지가 로드되었는지 확인
+            if (selectedImg.complete && selectedImg.naturalWidth > 0) {
+              // width/height 속성이 설정되어 있으면 그것을 사용, 없으면 기본값 800x400 사용
+              return {
+                width: attrs.width || '800',
+                height: attrs.height || '400',
+              };
+            } else {
+              // 이미지가 아직 로드되지 않았으면 로드 대기
+              const handleLoad = () => {
+                if (editor.isActive('image')) {
+                  const currentAttrs = editor.getAttributes('image');
+                  if (!currentAttrs.width && !currentAttrs.height) {
+                    setImageWidth('800');
+                    setImageHeight('400');
+                  }
+                }
+                selectedImg.removeEventListener('load', handleLoad);
+              };
+              selectedImg.addEventListener('load', handleLoad);
+
+              // 이미 로드된 경우에도 확인
+              if (selectedImg.naturalWidth > 0) {
+                return {
+                  width: attrs.width || '800',
+                  height: attrs.height || '400',
+                };
+              }
+            }
+          }
+
+          // DOM 요소를 찾지 못한 경우: 속성에 있으면 사용, 없으면 기본값 800x400
+          return {
+            width: attrs.width || '800',
+            height: attrs.height || '400',
+          };
+        };
+
+        const sizes = getImageActualSize();
+        setImageWidth(sizes.width);
+        setImageHeight(sizes.height);
+      } else {
+        setImageWidth('');
+        setImageHeight('');
+      }
     },
     editorProps: {
       attributes: { class: 'ProseMirror max-w-none focus:outline-none' },
       handlePaste: (view, event) => {
         if (!editor) return false;
-        
+
         // HTML이 있으면 기본 동작 허용 (이미지, 서식 등)
         const html = event.clipboardData?.getData('text/html');
         if (html && html.trim().length > 0) {
           return false; // 기본 붙여넣기 허용
         }
-        
+
         const text = event.clipboardData?.getData('text/plain');
         // URL인 경우에만 처리하고, 그 외에는 기본 동작 허용
         if (text && text.trim() && isValidUrl(text.trim())) {
@@ -607,10 +946,14 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
             event.preventDefault();
             convertUrlToBookmark(trimmedText).then(bookmarkData => {
               if (bookmarkData && editor) {
-                editor.chain().focus().insertContent({
-                  type: 'bookmark',
-                  attrs: bookmarkData,
-                }).run();
+                editor
+                  .chain()
+                  .focus()
+                  .insertContent({
+                    type: 'bookmark',
+                    attrs: bookmarkData,
+                  })
+                  .run();
               } else if (editor) {
                 // 북마크 변환 실패 시 일반 텍스트로 삽입
                 editor.chain().focus().insertContent(trimmedText).run();
@@ -629,10 +972,14 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
           event.preventDefault();
           convertUrlToBookmark(text).then(bookmarkData => {
             if (bookmarkData && editor) {
-              editor.chain().focus().insertContent({
-                type: 'bookmark',
-                attrs: bookmarkData,
-              }).run();
+              editor
+                .chain()
+                .focus()
+                .insertContent({
+                  type: 'bookmark',
+                  attrs: bookmarkData,
+                })
+                .run();
             }
           });
           return true;
@@ -644,70 +991,185 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         // Enter 키를 눌렀을 때 현재 줄이 URL인지 확인
         if (event.key === 'Enter') {
           const { state } = view;
-          const { selection } = state;
-          const { $from } = selection;
-          const line = $from.nodeBefore;
-          
-          if (line && line.type.name === 'paragraph') {
-            const text = line.textContent.trim();
+          const { $from } = state.selection;
+
+          const parent = $from.parent;
+          if (parent && parent.type.name === 'paragraph') {
+            const text = parent.textContent.trim();
+
             if (isValidUrl(text)) {
               event.preventDefault();
-              convertUrlToBookmark(text).then(bookmarkData => {
-                if (bookmarkData && editor) {
-                  // 현재 paragraph를 삭제하고 북마크 삽입
-                  const start = $from.start($from.depth);
-                  const end = $from.end($from.depth);
-                  editor.chain().focus().deleteRange({ from: start - 1, to: end }).insertContent({
-                    type: 'bookmark',
-                    attrs: bookmarkData,
-                  }).run();
-                }
-              });
+              replaceCurrentParagraphWithBookmark(text);
               return true;
             }
           }
         }
         // Space 키를 눌렀을 때도 URL인지 확인
         if (event.key === ' ') {
-          const { state } = view;
-          const { selection } = state;
-          const { $from } = selection;
-          const textBefore = $from.nodeBefore?.textContent || '';
-          const textAfter = $from.nodeAfter?.textContent || '';
-          const fullText = (textBefore + textAfter).trim();
-          
-          if (isValidUrl(fullText)) {
-            // Space 입력을 일시적으로 막고 URL을 북마크로 변환
-            setTimeout(() => {
-              if (editor) {
-                const currentState = editor.state;
-                const currentSelection = currentState.selection;
-                const currentFrom = currentSelection.$from;
-                const paragraph = currentFrom.node(currentFrom.depth);
-                if (paragraph && paragraph.type.name === 'paragraph') {
-                  const text = paragraph.textContent.trim();
-                  if (isValidUrl(text)) {
-                    convertUrlToBookmark(text).then(bookmarkData => {
-                      if (bookmarkData && editor) {
-                        const start = currentFrom.start(currentFrom.depth);
-                        const end = currentFrom.end(currentFrom.depth);
-                        editor.chain().focus().deleteRange({ from: start, to: end }).insertContent({
-                          type: 'bookmark',
-                          attrs: bookmarkData,
-                        }).run();
-                      }
-                    });
-                  }
-                }
+          setTimeout(() => {
+            if (!editor || (editor as any).isDestroyed) return;
+
+            const { state } = editor.view;
+            const { $from } = state.selection;
+            const parent = $from.parent;
+
+            if (parent && parent.type.name === 'paragraph') {
+              const text = parent.textContent.trim();
+              if (isValidUrl(text)) {
+                replaceCurrentParagraphWithBookmark(text);
               }
-            }, 100);
-          }
+            }
+          }, 0);
         }
+
         return false;
       },
     },
     immediatelyRender: false,
   });
+
+  type CanTableState = {
+    addRowBefore: boolean;
+    addRowAfter: boolean;
+    deleteRow: boolean;
+    addColumnBefore: boolean;
+    addColumnAfter: boolean;
+    deleteColumn: boolean;
+    toggleHeaderRow: boolean;
+    toggleHeaderColumn: boolean;
+    toggleHeaderCell: boolean;
+    mergeCells: boolean;
+    splitCell: boolean;
+    deleteTable: boolean;
+  };
+
+  const initialCanTable: CanTableState = {
+    addRowBefore: false,
+    addRowAfter: false,
+    deleteRow: false,
+    addColumnBefore: false,
+    addColumnAfter: false,
+    deleteColumn: false,
+    toggleHeaderRow: false,
+    toggleHeaderColumn: false,
+    toggleHeaderCell: false,
+    mergeCells: false,
+    splitCell: false,
+    deleteTable: false,
+  };
+
+  const [isTableActive, setIsTableActive] = useState(false);
+  const [canTable, setCanTable] = useState<CanTableState>(initialCanTable);
+
+  //행/열 테이블 상태 계산 함수
+  const [isHeaderRowOn, setIsHeaderRowOn] = useState(false);
+  const [isHeaderColOn, setIsHeaderColOn] = useState(false);
+
+  const getTableNodeFromSelection = (ed: any) => {
+    const { $from } = ed.state.selection;
+    for (let d = $from.depth; d > 0; d--) {
+      const node = $from.node(d);
+      // tiptap table node name = 'table'
+      if (node.type.name === 'table') return node;
+    }
+    return null;
+  };
+
+  const getHeaderStates = (ed: any) => {
+    const tableNode = getTableNodeFromSelection(ed);
+    if (!tableNode) return { headerRow: false, headerCol: false };
+
+    const map = TableMap.get(tableNode);
+    const isHeaderCell = (cellPos: number) => {
+      const cell = tableNode.nodeAt(cellPos);
+      return cell?.type?.name === 'tableHeader';
+    };
+
+    // 첫 번째 행(row=0)의 모든 칸이 tableHeader인지
+    let headerRow = map.width > 0;
+    for (let col = 0; col < map.width; col++) {
+      if (!isHeaderCell(map.map[col])) {
+        headerRow = false;
+        break;
+      }
+    }
+
+    // 첫 번째 열(col=0)의 모든 칸이 tableHeader인지
+    let headerCol = map.height > 0;
+    for (let row = 0; row < map.height; row++) {
+      const idx = row * map.width; // col=0
+      if (!isHeaderCell(map.map[idx])) {
+        headerCol = false;
+        break;
+      }
+    }
+
+    return { headerRow, headerCol };
+  };
+
+  const computeCanTable = (ed: any): CanTableState => {
+    return {
+      addRowBefore: ed.can().chain().addRowBefore().run(),
+      addRowAfter: ed.can().chain().addRowAfter().run(),
+      deleteRow: ed.can().chain().deleteRow().run(),
+
+      addColumnBefore: ed.can().chain().addColumnBefore().run(),
+      addColumnAfter: ed.can().chain().addColumnAfter().run(),
+      deleteColumn: ed.can().chain().deleteColumn().run(),
+
+      toggleHeaderRow: ed.can().chain().toggleHeaderRow().run(),
+      toggleHeaderColumn: ed.can().chain().toggleHeaderColumn().run(),
+      toggleHeaderCell: ed.can().chain().toggleHeaderCell().run(),
+
+      mergeCells: ed.can().chain().mergeCells().run(),
+      splitCell: ed.can().chain().splitCell().run(),
+
+      deleteTable: ed.can().chain().deleteTable().run(),
+    };
+  };
+
+  const shallowEqual = (a: CanTableState, b: CanTableState) => {
+    for (const k in a) {
+      const key = k as keyof CanTableState;
+      if (a[key] !== b[key]) return false;
+    }
+    return true;
+  };
+
+  useEffect(() => {
+    if (!editor) return;
+
+    const refresh = () => {
+      const active = editor.isActive('table');
+      setIsTableActive(active);
+
+      if (!active) {
+        setCanTable(prev => (shallowEqual(prev, initialCanTable) ? prev : initialCanTable));
+        setIsHeaderRowOn(false);
+        setIsHeaderColOn(false);
+        return;
+      }
+
+      const next = computeCanTable(editor);
+      setCanTable(prev => (shallowEqual(prev, next) ? prev : next));
+
+      const { headerRow, headerCol } = getHeaderStates(editor);
+      setIsHeaderRowOn(headerRow);
+      setIsHeaderColOn(headerCol);
+    };
+
+    // 최초 1회
+    refresh();
+
+    // selection 움직일 때 / 문서 변경될 때 갱신
+    editor.on('selectionUpdate', refresh);
+    editor.on('transaction', refresh);
+
+    return () => {
+      editor.off('selectionUpdate', refresh);
+      editor.off('transaction', refresh);
+    };
+  }, [editor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -985,7 +1447,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
   const handleFontSizeInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     // 모든 키 이벤트를 입력 필드에서 처리하고 에디터로 전파되지 않도록 함
     e.stopPropagation();
-    
+
     if (e.key === 'Enter') {
       e.preventDefault();
       const value = fontSize.trim();
@@ -1049,7 +1511,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       return;
     }
 
-    // 파일 크기 제한 
+    // 파일 크기 제한
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
       alert('파일 크기는 10MB 이하여야 합니다.');
@@ -1058,9 +1520,18 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
     // Blob URL 생성
     const imageUrl = URL.createObjectURL(file);
-    
-    // 이미지를 에디터에 삽입
-    editor.chain().focus().setImage({ src: imageUrl, alt: '이미지' }).run();
+
+    // 이미지를 에디터에 삽입 (기본 크기 800x400)
+    editor
+      .chain()
+      .focus()
+      .setImage({
+        src: imageUrl,
+        alt: '이미지',
+        width: '800',
+        height: '400',
+      } as any)
+      .run();
 
     // input 초기화 (같은 파일을 다시 선택할 수 있도록)
     e.target.value = '';
@@ -1087,17 +1558,21 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
     // Blob URL 생성
     const fileUrl = URL.createObjectURL(file);
-    
+
     // 파일 노드로 삽입
-    editor.chain().focus().insertContent({
-      type: 'file',
-      attrs: {
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type,
-        fileUrl: fileUrl,
-      },
-    }).run();
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'file',
+        attrs: {
+          fileName: file.name,
+          fileSize: file.size,
+          fileType: file.type,
+          fileUrl: fileUrl,
+        },
+      })
+      .run();
 
     // input 초기화
     e.target.value = '';
@@ -1122,12 +1597,16 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
     // Blob URL 생성
     const videoUrl = URL.createObjectURL(file);
-    
+
     // 비디오 노드로 삽입
-    editor.chain().focus().insertContent({
-      type: 'video',
-      attrs: { src: videoUrl },
-    }).run();
+    editor
+      .chain()
+      .focus()
+      .insertContent({
+        type: 'video',
+        attrs: { src: videoUrl },
+      })
+      .run();
 
     // input 초기화 (같은 파일을 다시 선택할 수 있도록)
     e.target.value = '';
@@ -1135,13 +1614,113 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
 
   const addQuote = () => editor.chain().focus().toggleBlockquote().run();
   const addDivider = () => editor.chain().focus().setHorizontalRule().run();
+  //링크용 URL 정규화 (상대경로 방지)
+  const normalizeUrl = (raw: string) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return null;
+
+    // mailto/tel 등도 필요하면 허용
+    if (/^(mailto:|tel:)/i.test(trimmed)) return trimmed;
+
+    // 이미 http(s)면 그대로
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+
+    // 나머지는 https:// 붙이기
+    return `https://${trimmed}`;
+  };
+
   const setLink = () => {
-    const url = window.prompt('링크 URL을 입력하세요:');
-    if (url) editor.chain().focus().setLink({ href: url }).run();
+    if (!editor) return;
+
+    const input = window.prompt('링크 URL을 입력하세요:');
+    if (!input) return;
+
+    // https:// 붙여서 절대 URL로 만들기
+    const normalized = normalizeUrl(input);
+    if (!normalized) return;
+
+    if (!isValidUrl(normalized)) {
+      alert('유효한 URL이 아니에요.');
+      return;
+    }
+
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange('link') // 이미 링크면 범위 확장해서 수정
+      .setLink({ href: normalized })
+      .run();
   };
   const addCodeBlock = () => editor.chain().focus().toggleCodeBlock().run();
+  // 표 삽입
   const addTable = () =>
     editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+
+  // 표 편집 (행/열/헤더/병합 등)
+  const table = {
+    addRowBefore: () => editor.chain().focus().addRowBefore().run(),
+    addRowAfter: () => editor.chain().focus().addRowAfter().run(),
+    deleteRow: () => editor.chain().focus().deleteRow().run(),
+
+    addColumnBefore: () => editor.chain().focus().addColumnBefore().run(),
+    addColumnAfter: () => editor.chain().focus().addColumnAfter().run(),
+    deleteColumn: () => editor.chain().focus().deleteColumn().run(),
+
+    toggleHeaderRow: () => editor.chain().focus().toggleHeaderRow().run(),
+    toggleHeaderColumn: () => editor.chain().focus().toggleHeaderColumn().run(),
+    toggleHeaderCell: () => editor.chain().focus().toggleHeaderCell().run(),
+
+    mergeCells: () => editor.chain().focus().mergeCells().run(),
+    splitCell: () => editor.chain().focus().splitCell().run(),
+
+    deleteTable: () => editor.chain().focus().deleteTable().run(),
+  };
+
+  // 이미지 크기 변경
+  const handleImageSizeChange = () => {
+    if (!editor || !isImageSelected) return;
+
+    const width = imageWidth.trim();
+    const height = imageHeight.trim();
+
+    // 현재 이미지 속성 가져오기
+    const currentAttrs = editor.getAttributes('image');
+
+    const attrs: any = {
+      ...currentAttrs,
+    };
+
+    if (width && !isNaN(Number(width)) && Number(width) > 0) {
+      attrs.width = width;
+    } else if (width === '') {
+      // 빈 값이면 width 제거
+      attrs.width = null;
+    }
+
+    if (height && !isNaN(Number(height)) && Number(height) > 0) {
+      attrs.height = height;
+    } else if (height === '') {
+      // 빈 값이면 height 제거
+      attrs.height = null;
+    }
+
+    editor.chain().focus().setImage(attrs).run();
+  };
+
+  const handleImageWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageWidth(e.target.value);
+  };
+
+  const handleImageHeightChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageHeight(e.target.value);
+  };
+
+  const handleImageSizeKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleImageSizeChange();
+    }
+  };
 
   return (
     <div className="border border-brown-200 rounded-lg overflow-hidden">
@@ -1273,9 +1852,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
             {fontSizeMode === 'select' ? (
               <Select value={fontSize} onValueChange={handleFontSizeChange}>
                 <SelectTrigger className="w-24 h-8 text-xs" onMouseDown={e => e.preventDefault()}>
-                  <SelectValue placeholder={fontSize || '15'}>
-                    {fontSize || '15'}
-                  </SelectValue>
+                  <SelectValue placeholder={fontSize || '15'}>{fontSize || '15'}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="12">12</SelectItem>
@@ -1288,12 +1865,12 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
                   <SelectItem value="28">28</SelectItem>
                   <SelectItem value="32">32</SelectItem>
                   {/* 직접 입력한 값이 목록에 없으면 동적으로 추가 */}
-                  {fontSize && 
-                   !['12', '14', '15', '16', '18', '20', '24', '28', '32', 'custom'].includes(fontSize) && 
-                   !isNaN(Number(fontSize)) && 
-                   Number(fontSize) > 0 && (
-                    <SelectItem value={fontSize}>{fontSize}</SelectItem>
-                  )}
+                  {fontSize &&
+                    !['12', '14', '15', '16', '18', '20', '24', '28', '32', 'custom'].includes(
+                      fontSize
+                    ) &&
+                    !isNaN(Number(fontSize)) &&
+                    Number(fontSize) > 0 && <SelectItem value={fontSize}>{fontSize}</SelectItem>}
                   <SelectItem value="custom">직접 입력</SelectItem>
                 </SelectContent>
               </Select>
@@ -1305,9 +1882,9 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
                 onChange={handleFontSizeInput}
                 onBlur={handleFontSizeInputBlur}
                 onKeyDown={handleFontSizeInputKeyDown}
-                onKeyUp={(e) => e.stopPropagation()}
-                onClick={(e) => e.stopPropagation()}
-                onMouseDown={(e) => e.stopPropagation()}
+                onKeyUp={e => e.stopPropagation()}
+                onClick={e => e.stopPropagation()}
+                onMouseDown={e => e.stopPropagation()}
                 className="w-20 h-8 text-xs text-center"
                 placeholder="직접입력"
                 min="8"
@@ -1408,6 +1985,154 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
           </Button>
         </div>
       </div>
+      {/* 표 편집 UI */}
+      {isTableActive && (
+        <div className="p-3 border-b border-brown-200 bg-gray-50">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* 행 */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={table.addRowBefore}
+              disabled={!canTable.addRowBefore}
+              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+            >
+              행 위 추가
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={table.addRowAfter}
+              disabled={!canTable.addRowAfter}
+              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+            >
+              행 아래 추가
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={table.deleteRow}
+              disabled={!canTable.deleteRow}
+              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+            >
+              행 삭제
+            </Button>
+
+            {/* 열 */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={table.addColumnBefore}
+              disabled={!canTable.addColumnBefore}
+              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+            >
+              열 왼쪽 추가
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={table.addColumnAfter}
+              disabled={!canTable.addColumnAfter}
+              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+            >
+              열 오른쪽 추가
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={table.deleteColumn}
+              disabled={!canTable.deleteColumn}
+              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+            >
+              열 삭제
+            </Button>
+
+            {/* 헤더 */}
+            <Button
+              variant={isHeaderRowOn ? 'default' : 'ghost'}
+              size="sm"
+              onClick={table.toggleHeaderRow}
+              disabled={!canTable.toggleHeaderRow}
+              className={isHeaderRowOn ? 'h-8 px-2' : 'h-8 px-2 text-brown-700 hover:bg-brown-100'}
+            >
+              헤더 행
+            </Button>
+
+            <Button
+              variant={isHeaderColOn ? 'default' : 'ghost'}
+              size="sm"
+              onClick={table.toggleHeaderColumn}
+              disabled={!canTable.toggleHeaderColumn}
+              className={isHeaderColOn ? 'h-8 px-2' : 'h-8 px-2 text-brown-700 hover:bg-brown-100'}
+            >
+              헤더 열
+            </Button>
+
+            {/* 병합/분할 */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={table.mergeCells}
+              disabled={!canTable.mergeCells}
+              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+            >
+              셀 병합
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={table.splitCell}
+              disabled={!canTable.splitCell}
+              className="h-8 px-2 text-brown-700 hover:bg-brown-100"
+            >
+              셀 분할
+            </Button>
+
+            {/* 표 삭제 */}
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={table.deleteTable}
+              disabled={!canTable.deleteTable}
+              className="h-8 px-2"
+            >
+              표 삭제
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* 이미지 편집 UI */}
+      {isImageSelected && (
+        <div className="p-3 border-b border-brown-200 bg-gray-50">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-brown-700">이미지 크기:</span>
+            <div className="flex items-center gap-2">
+              <Input
+                type="number"
+                value={imageWidth}
+                onChange={handleImageWidthChange}
+                onBlur={handleImageSizeChange}
+                onKeyDown={handleImageSizeKeyDown}
+                placeholder="800"
+                className="w-20 h-8 text-xs text-center image-size-input"
+                min="1"
+              />
+              <span className="text-sm text-brown-500">×</span>
+              <Input
+                type="number"
+                value={imageHeight}
+                onChange={handleImageHeightChange}
+                onBlur={handleImageSizeChange}
+                onKeyDown={handleImageSizeKeyDown}
+                placeholder="400"
+                className="w-20 h-8 text-xs text-center image-size-input"
+                min="1"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 에디터 본문 */}
       <div className="p-4 min-h-96">
@@ -1431,14 +2156,112 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         className="hidden"
         onChange={handleVideoFileSelect}
       />
-      
+
       {/* 숨겨진 파일 입력 */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        className="hidden"
-        onChange={handleFileSelect}
-      />
+      <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileSelect} />
+
+      {/* 투표 팝업 */}
+      <Dialog open={isPollDialogOpen} onOpenChange={setIsPollDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>투표 만들기</DialogTitle>
+            <DialogDescription>투표 제목과 항목을 입력하고 설정을 선택하세요.</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            {/* 투표 제목 */}
+            <div className="space-y-2">
+              <Label htmlFor="poll-title">투표 제목</Label>
+              <Input
+                id="poll-title"
+                value={pollTitle}
+                onChange={e => setPollTitle(e.target.value)}
+                placeholder="투표 제목을 입력하세요"
+              />
+            </div>
+
+            {/* 투표 항목 */}
+            <div className="space-y-2">
+              <Label>투표 항목</Label>
+              <div className="space-y-2">
+                {pollItems.map((item, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <Input
+                      value={item}
+                      onChange={e => updatePollItem(index, e.target.value)}
+                      placeholder={`항목 ${index + 1}`}
+                      className="flex-1"
+                    />
+                    {pollItems.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => removePollItem(index)}
+                        className="h-8 w-8 p-0"
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addPollItem}
+                className="w-full"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                항목 추가
+              </Button>
+            </div>
+
+            {/* 복수선택 설정 */}
+            <div className="space-y-2">
+              <Label>선택 방식</Label>
+              <RadioGroup
+                value={allowMultiple ? 'multiple' : 'single'}
+                onValueChange={value => setAllowMultiple(value === 'multiple')}
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="single" id="single" />
+                  <Label htmlFor="single" className="font-normal cursor-pointer">
+                    단일 선택 (라디오 버튼)
+                  </Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="multiple" id="multiple" />
+                  <Label htmlFor="multiple" className="font-normal cursor-pointer">
+                    복수 선택 (체크박스)
+                  </Label>
+                </div>
+              </RadioGroup>
+            </div>
+
+            {/* 투표 종료시간 */}
+            <div className="space-y-2">
+              <Label htmlFor="poll-end-time">투표 종료시간 (선택사항)</Label>
+              <Input
+                id="poll-end-time"
+                type="datetime-local"
+                value={pollEndTime}
+                onChange={e => setPollEndTime(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setIsPollDialogOpen(false)}>
+              취소
+            </Button>
+            <Button type="button" onClick={createPoll}>
+              생성
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
