@@ -5,11 +5,28 @@ import { toAlcoholLabel } from '@/utils/alcoholTypeConvertor';
 import Rating from '@/components/common/Rating';
 import CommentSection from '@/components/comment/CommentSection';
 import AppearanceBar from '@/components/tasting-note/AppearanceBar';
-import { FlavorTile } from '@/components/tasting-note/FlavorSelector';
+import FlavorTile from '@/components/tasting-note/FlavorTile';
 import ImageGallery from '@/components/ImageGallery';
+import type { FlavorItemDef, BegFlavorItemDef } from '@/components/tasting-note/FlavorGroups';
+import {
+  FLAVOR_GROUPS_BEGINNER,
+  FLAVOR_GROUPS_EXPERT,
+} from '@/components/tasting-note/FlavorGroups';
+
+const makeBegIconMap = (items: BegFlavorItemDef[]) =>
+  new Map(items.map(i => [i.name, { iconSrc: i.iconSrc, iconActiveSrc: i.iconActiveSrc }]));
+
+const makeExpertIconMap = (groups: { items: FlavorItemDef[] }[]) => {
+  const flat = groups.flatMap(g => g.items);
+  return new Map(flat.map(i => [i.name, { iconSrc: i.iconSrc, iconActiveSrc: i.iconActiveSrc }]));
+};
+
+const begIconMap = makeBegIconMap(FLAVOR_GROUPS_BEGINNER);
+const expertIconMap = makeExpertIconMap(FLAVOR_GROUPS_EXPERT);
 
 export default function TastingNoteDetailPage() {
   const data = tastingNoteDetail[0];
+  const iconMap = data.noteType === 'beginner' ? begIconMap : expertIconMap;
   return (
     <div className="flex flex-col gap-10 mx-30 mb-30">
       <BackButton>Tasting Note</BackButton>
@@ -81,30 +98,90 @@ export default function TastingNoteDetailPage() {
           )}
 
           {/* Aroma, Palate, Finish */}
+
+          {/* DEBUG: flavor names + iconMap hit 여부 */}
+          {/* <pre className="rounded-xl border bg-gray-50 p-4 text-xs text-gray-800">
+            {JSON.stringify(
+              {
+                noteType: data.noteType,
+                aroma: data.content.aroma.map((f: any) => ({
+                  name: f.name,
+                  value: f.value,
+                  iconHit: !!iconMap.get(f.name),
+                })),
+                palate: data.content.palate.map((f: any) => ({
+                  name: f.name,
+                  value: f.value,
+                  iconHit: !!iconMap.get(f.name),
+                })),
+                finish: data.content.finish.map((f: any) => ({
+                  name: f.name,
+                  value: f.value,
+                  iconHit: !!iconMap.get(f.name),
+                })),
+              },
+              null,
+              2
+            )}
+          </pre> */}
           <div className="flex flex-col gap-3">
             <dt className="text-head5 text-black">Aroma(향)</dt>
-            <dd className="flex gap-4">
-              {data.content.aroma.map(f => (
-                <FlavorTile key={f.name} label={f.name} score={f.value} className="w-32" />
-              ))}
+            <dd className="flex flex-wrap gap-4">
+              {data.content.aroma.map((f: { name: string; value: number }) => {
+                const icons = iconMap.get(f.name);
+
+                return (
+                  <FlavorTile
+                    key={f.name}
+                    label={f.name}
+                    score={f.value}
+                    iconSrc={icons?.iconSrc}
+                    iconActiveSrc={icons?.iconActiveSrc}
+                    active
+                    className="w-32"
+                  />
+                );
+              })}
             </dd>
           </div>
 
           <div className="flex flex-col gap-3">
             <dt className="text-head5 text-black">Palate(맛)</dt>
-            <dd className="flex gap-4">
-              {data.content.palate.map(f => (
-                <FlavorTile key={f.name} label={f.name} score={f.value} className="w-32" />
-              ))}
+            <dd className="flex flex-wrap gap-4">
+              {data.content.palate.map((f: { name: string; value: number }) => {
+                const icons = iconMap.get(f.name);
+                return (
+                  <FlavorTile
+                    key={f.name}
+                    label={f.name}
+                    score={f.value}
+                    iconSrc={icons?.iconSrc}
+                    iconActiveSrc={icons?.iconActiveSrc}
+                    active
+                    className="w-32"
+                  />
+                );
+              })}
             </dd>
           </div>
 
           <div className="flex flex-col gap-3">
             <dt className="text-head5 text-black">Finish(피니시)</dt>
-            <dd className="flex gap-4">
-              {data.content.finish.map(f => (
-                <FlavorTile key={f.name} label={f.name} score={f.value} className="w-32" />
-              ))}
+            <dd className="flex flex-wrap gap-4">
+              {data.content.finish.map((f: { name: string; value: number }) => {
+                const icons = iconMap.get(f.name);
+                return (
+                  <FlavorTile
+                    key={f.name}
+                    label={f.name}
+                    score={f.value}
+                    iconSrc={icons?.iconSrc}
+                    iconActiveSrc={icons?.iconActiveSrc}
+                    active
+                    className="w-32"
+                  />
+                );
+              })}
             </dd>
           </div>
           {/* Comment */}
