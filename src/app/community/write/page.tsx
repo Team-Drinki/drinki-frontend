@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -23,13 +24,86 @@ const TOPIC_OPTIONS = [
 type TopicValue = (typeof TOPIC_OPTIONS)[number]['value'];
 
 export default function CommunityWritePage() {
+  const router = useRouter();
+
   const [selectedTopic, setSelectedTopic] = useState<TopicValue | undefined>(undefined);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
-  const handleSubmit = () => {
-    // TODO: 글 작성 로직 구현
-    console.log('글 작성:', { selectedTopic, title, content });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
+  const handleSubmit = async () => {
+    // 프론트 유효성 검사
+    if (!selectedTopic) {
+      setErrorMsg('게시판 주제를 선택해주세요.');
+      return;
+    }
+    if (!title.trim()) {
+      setErrorMsg('제목을 입력해주세요.');
+      return;
+    }
+    if (!content.trim()) {
+      setErrorMsg('내용을 입력해주세요.');
+      return;
+    }
+
+    // 백엔드 category enum으로 변환
+    const category = selectedTopic === 'general' ? 'FREE' : 'QUESTION'; // selectedTopic이 'question'인 경우
+
+    // 백엔드 요청 body 구성 (중요: content -> body)
+    const payload = {
+      title: title.trim(),
+      category, // 'FREE' | 'QUESTION'
+      body: content, // 백엔드는 body 필드명을 씀
+      // imageUrl: undefined, // 지금은 필요 없으면 안 보내도 됨
+    };
+
+    setIsSubmitting(true);
+    setErrorMsg(null);
+
+    try {
+      const res = await fetch('http://localhost:8000/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include', // 쿠키 기반 인증이면 필요. (필요 없으면 지워도 됨)
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        // 서버가 json 에러를 줄 수도 있고, 텍스트만 줄 수도 있어서 둘 다 대비
+        let msg = `요청 실패 (${res.status})`;
+        try {
+          const data = await res.json();
+          msg = data?.message ?? data?.error ?? msg;
+        } catch {
+          const text = await res.text().catch(() => '');
+          if (text) msg = text;
+        }
+        throw new Error(msg);
+      }
+
+      // 생성된 글 ID 파싱
+      let createdId: number | undefined;
+      try {
+        const created = await res.json();
+        createdId = created?.id;
+      } catch {
+        // 응답 바디가 비어있을 수도 있으니 무시
+      }
+
+      //  성공 후 이동
+      if (createdId) {
+        router.push(`/community/${createdId}`);
+      } else {
+        router.push('/community');
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.';
+      setErrorMsg(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -106,9 +180,10 @@ export default function CommunityWritePage() {
           <div className="flex justify-end">
             <Button
               type="submit"
-              className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 xl:px-6 py-2 xl:py-1.5 rounded-lg font-medium text-base xl:text-sm"
+              disabled={isSubmitting}
+              className="bg-gray-300 hover:bg-gray-400 disabled:opacity-60 text-gray-700 px-8 xl:px-6 py-2 xl:py-1.5 rounded-lg font-medium text-base xl:text-sm"
             >
-              등록하기
+              {isSubmitting ? '등록 중...' : '등록하기'}
             </Button>
           </div>
         </form>
