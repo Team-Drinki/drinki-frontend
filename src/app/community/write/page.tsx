@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -32,19 +32,43 @@ export default function CommunityWritePage() {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    if (!toastMsg) return;
+
+    // 등장
+    setShowToast(true);
+
+    // 3초 유지 후 퇴장 시작
+    const hideTimer = setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
+
+    // 퇴장 애니메이션 끝난 뒤 메시지 제거
+    const clearTimer = setTimeout(() => {
+      setToastMsg(null);
+    }, 3300);
+
+    return () => {
+      clearTimeout(hideTimer);
+      clearTimeout(clearTimer);
+    };
+  }, [toastMsg]);
 
   const handleSubmit = async () => {
     // 프론트 유효성 검사
     if (!selectedTopic) {
-      setErrorMsg('게시판 주제를 선택해주세요.');
+      setToastMsg('게시판 주제를 선택해주세요.');
       return;
     }
     if (!title.trim()) {
-      setErrorMsg('제목을 입력해주세요.');
+      setToastMsg('제목을 입력해주세요.');
       return;
     }
     if (!content.trim()) {
-      setErrorMsg('내용을 입력해주세요.');
+      setToastMsg('내용을 입력해주세요.');
       return;
     }
 
@@ -60,13 +84,13 @@ export default function CommunityWritePage() {
     };
 
     setIsSubmitting(true);
-    setErrorMsg(null);
+    setToastMsg(null);
 
     try {
-      const res = await fetch('http://localhost:8000/posts', {
+      const res = await fetch('http://localhost:8000/api/v1/posts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        credentials: 'include', // 쿠키 기반 인증이면 필요. (필요 없으면 지워도 됨)
+        //credentials: 'include', // 추후 로그인 기능 구현 시 쿠키 인증을 사용할 경우 필요
         body: JSON.stringify(payload),
       });
 
@@ -100,7 +124,7 @@ export default function CommunityWritePage() {
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.';
-      setErrorMsg(msg);
+      setToastMsg(msg);
     } finally {
       setIsSubmitting(false);
     }
@@ -108,6 +132,23 @@ export default function CommunityWritePage() {
 
   return (
     <div className="flex-1">
+      {/* 팝업 토스트 */}
+      {toastMsg && (
+        <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+          <div
+            role="alert"
+            className={[
+              'pointer-events-none w-full max-w-sm rounded-xl border px-4 py-3 text-sm shadow-lg',
+              'bg-red-50 border-red-200 text-red-800',
+              'transition-all duration-300 ease-out',
+              showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2',
+            ].join(' ')}
+          >
+            {toastMsg}
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto w-full max-w-4xl 2xl:max-w-5xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         {/* 뒤로가기 버튼 */}
         <div className="mb-6">
