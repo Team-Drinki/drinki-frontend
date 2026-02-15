@@ -1,17 +1,42 @@
 import { z } from 'zod';
 
-export const alcoholDetailSchema = z.object({
+const alcoholRelationSchema = z
+  .object({
+    id: z.number(),
+    name: z.string(),
+  })
+  .nullable();
+
+const alcoholDetailResponseSchema = z.object({
   id: z.number(),
   name: z.string(),
+  imageUrl: z.string().nullable(),
+  price: z.number(),
   proof: z.number(),
-  image: z.string().nullable(),
-  category: z.string(),
-  location: z.string(),
-  style: z.string(),
-  description: z.string(),
-  wish: z.number(),
   rating: z.number(),
-  isWish: z.boolean(),
+  wishCnt: z.number(),
+  viewCnt: z.number(),
+  noteCnt: z.number(),
+  content: z.string(),
+  createdAt: z.coerce.date(),
+  updatedAt: z.coerce.date(),
+  category: alcoholRelationSchema,
+  location: alcoholRelationSchema,
+  style: alcoholRelationSchema,
 });
+
+export const alcoholDetailSchema = alcoholDetailResponseSchema.transform(data => ({
+  id: data.id,
+  name: data.name,
+  image: data.imageUrl,
+  proof: data.proof,
+  category: data.category?.name ?? '',
+  location: data.location?.name ?? '',
+  style: data.style?.name ?? '',
+  description: data.content,
+  wish: data.wishCnt,
+  rating: data.rating,
+  isWish: false,
+}));
 
 export type AlcoholDetail = z.infer<typeof alcoholDetailSchema>;
