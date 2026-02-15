@@ -40,3 +40,18 @@ export const alcoholDetailSchema = alcoholDetailResponseSchema.transform(data =>
 }));
 
 export type AlcoholDetail = z.infer<typeof alcoholDetailSchema>;
+
+const alcoholRecommendationItemSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  imageUrl: z.string().nullable(),
+  wishCnt: z.number(),
+  viewCnt: z.number(),
+  noteCnt: z.number(),
+});
+
+export const alcoholRecommendationsSchema = z.object({
+  recommendations: z.array(alcoholRecommendationItemSchema),
+});
+
+export type AlcoholRecommendation = z.infer<typeof alcoholRecommendationItemSchema>;

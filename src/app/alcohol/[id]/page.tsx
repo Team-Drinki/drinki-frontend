@@ -2,11 +2,12 @@ import DrinkCard from '@/components/common/DrinkCard';
 import { tastingNotes } from '@/app/mockup';
 import BackButton from '@/components/common/BackButton';
 import Image from 'next/image';
+import Link from 'next/link';
 import { ChevronRight } from 'lucide-react';
 import WishListButton from '@/components/buttons/WishListButton';
 import Rating from '@/components/common/Rating';
 import TastingNoteButton from '@/components/buttons/TastingNoteButton';
-import { getAlcoholDetail } from '@/api/alcohol';
+import { getAlcoholDetail, getAlcoholRecommendations } from '@/api/alcohol';
 import { notFound } from 'next/navigation';
 
 interface AlcoholDetailPageProps {
@@ -25,7 +26,9 @@ export default async function AlcoholDetailPage({ params }: AlcoholDetailPagePro
 
   try {
     const data = await getAlcoholDetail(id);
-
+    const recommendations = (await getAlcoholRecommendations(10))
+      .filter(item => item.id !== id)
+      .slice(0, 3);
     return (
       <main className="flex justify-center flex-col mx-5 md:mx-16 lg:mx-32">
         <BackButton className="mt-10 mb-6">Drink</BackButton>
@@ -97,17 +100,18 @@ export default async function AlcoholDetailPage({ params }: AlcoholDetailPagePro
           <h3 className="text-head3">Recommendations</h3>
           <div className="relative w-screen left-1/2 -translate-x-1/2 bg-[var(--color-grey-100)]">
             <div className="flex justify-center gap-6 mx-34 py-14">
-              {tastingNotes.slice(0, 3).map(note => (
-                <DrinkCard
-                  key={note.id}
-                  title={note.title}
-                  author={note.author}
-                  imageUrl={note.imageUrl}
-                  avatarUrl={note.avatarUrl}
-                  likes={note.likes}
-                  views={note.views}
-                  comments={note.comments}
-                />
+              {recommendations.map(item => (
+                <Link key={item.id} href={`/alcohol/${item.id}`} className="block">
+                  <DrinkCard
+                    title={item.name}
+                    author="Drinki"
+                    imageUrl={item.imageUrl ?? '/images/whisky.png'}
+                    avatarUrl="/images/avatar.png"
+                    likes={item.wishCnt}
+                    views={item.viewCnt}
+                    comments={item.noteCnt}
+                  />
+                </Link>
               ))}
             </div>
           </div>
