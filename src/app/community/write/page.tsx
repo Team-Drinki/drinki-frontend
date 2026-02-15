@@ -75,27 +75,32 @@ export default function CommunityWritePage() {
     // 백엔드 category enum으로 변환
     const category = selectedTopic === 'general' ? 'FREE' : 'QUESTION'; // selectedTopic이 'question'인 경우
 
-    // 백엔드 요청 body 구성 (중요: content -> body)
+    // 요청 바디 구성
     const payload = {
       title: title.trim(),
-      category, // 'FREE' | 'QUESTION'
-      body: content, // 백엔드는 body 필드명을 씀
-      // imageUrl: undefined, // 지금은 필요 없으면 안 보내도 됨
+      body: content,
+      category, 
+      // imageUrl: undefined,
     };
 
     setIsSubmitting(true);
     setToastMsg(null);
 
     try {
-      const res = await fetch('http://localhost:8000/api/v1/posts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        //credentials: 'include', // 추후 로그인 기능 구현 시 쿠키 인증을 사용할 경우 필요
-        body: JSON.stringify(payload),
-      });
+      const res = await fetch(
+        `http://localhost:8000/api/v1/posts?category=${encodeURIComponent(category)}`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            // 개발용 임시 로그인
+            'x-dev-user-id': '1',
+          },
+          body: JSON.stringify(payload),
+        },
+      );
 
       if (!res.ok) {
-        // 서버가 json 에러를 줄 수도 있고, 텍스트만 줄 수도 있어서 둘 다 대비
         let msg = `요청 실패 (${res.status})`;
         try {
           const data = await res.json();

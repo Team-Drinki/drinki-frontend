@@ -1,8 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -24,21 +24,74 @@ type TopicValue = (typeof TOPIC_OPTIONS)[number]['value'];
 
 export default function CommunityEditPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  // 현재 라우팅이 /community/edit 이므로 쿼리로 postId를 받음: /community/edit?postId=123
+  const postId = searchParams.get('postId') ?? searchParams.get('id');
 
-  // TODO: GET /posts/:postId 결과로 초기값 세팅
-  // placeholder: 임시로 기존 글 데이터(mock)
-  const [selectedTopic, setSelectedTopic] = useState<TopicValue>('general');
-  const [title, setTitle] = useState('수정할 글 제목 (임시)');
-  const [content, setContent] = useState('<p>수정할 글 내용 (임시)</p>');
+  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+  const [selectedTopic, setSelectedTopic] = useState<TopicValue | undefined>(undefined);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
 
   const [isSaving, setIsSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!postId) {
+      setIsLoading(false);
+      setErrorMsg('postId가 없습니다. /community/edit?postId=123 형태로 접근해주세요.');
+      return;
+    }
+
+    const run = async () => {
+      setIsLoading(true);
+      setErrorMsg(null);
+
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/v1/posts/${postId}`, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            // 개발용 임시 로그인
+            'x-dev-user-id': '1',
+          },
+        });
+
+        if (!res.ok) {
+          const text = await res.text().catch(() => '');
+          throw new Error(text || `요청 실패 (${res.status})`);
+        }
+
+        const data = (await res.json()) as any;
+
+        const topic: TopicValue = data?.category === 'QUESTION' ? 'question' : 'general';
+        setSelectedTopic(topic);
+
+        setTitle(typeof data?.title === 'string' ? data.title : '');
+        setContent(typeof data?.body === 'string' ? data.body : (typeof data?.content === 'string' ? data.content : ''));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.';
+        setErrorMsg(msg);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    void run();
+  }, [API_BASE_URL, postId]);
 
   const handleCancel = () => {
     router.back();
   };
 
   const handleSave = async () => {
+    if (isSaving) return;
+    if (!postId) {
+      setErrorMsg('postId를 찾을 수 없습니다. (URL 경로를 확인해주세요)');
+      return;
+    }
     if (!selectedTopic) {
       setErrorMsg('게시판 주제를 선택해주세요.');
       return;
@@ -56,17 +109,41 @@ export default function CommunityEditPage() {
     setErrorMsg(null);
 
     try {
-      // TODO: PUT /posts/:postId 연결
-      // payload: { title, category, body }
-      // category 매핑: general -> FREE, question -> QUESTION
-      console.log('수정 저장(임시):', {
-        selectedTopic,
+      const category = selectedTopic === 'question' ? 'QUESTION' : 'FREE';
+      // 요청 바디 구성
+      const payload = {
         title: title.trim(),
         body: content,
-      });
+        category, // 백엔드에서 body.category를 읽는 경우 대비
+      };
 
-      // TODO: 저장 성공 시 상세로 이동: /community/{postId}
-      router.push('/community');
+      const res = await fetch(
+        `${API_BASE_URL}/api/v1/posts/${postId}?category=${encodeURIComponent(category)}`,
+        {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            // 개발용 임시 로그인
+            'x-dev-user-id': '1',
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+
+      if (!res.ok) {
+        let msg = `요청 실패 (${res.status})`;
+        try {
+          const data = await res.json();
+          msg = data?.message ?? data?.error ?? msg;
+        } catch {
+          const text = await res.text().catch(() => '');
+          if (text) msg = text;
+        }
+        throw new Error(msg);
+      }
+
+      // 저장 성공 시 상세로 이동
+      router.push(`/community/${postId}`);
     } catch (e) {
       const msg = e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.';
       setErrorMsg(msg);
@@ -153,10 +230,10 @@ export default function CommunityEditPage() {
 
             <Button
               type="submit"
-              disabled={isSaving}
+              disabled={isSaving || isLoading}
               className="bg-gray-300 hover:bg-gray-400 disabled:opacity-60 text-gray-700 px-8 xl:px-6 py-2 xl:py-1.5 rounded-lg font-medium text-base xl:text-sm"
             >
-              {isSaving ? '저장 중...' : '수정 저장'}
+              {isLoading ? '불러오는 중...' : isSaving ? '저장 중...' : '수정 저장'}
             </Button>
           </div>
         </form>
