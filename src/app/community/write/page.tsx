@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { ChevronLeft } from 'lucide-react';
 import RichTextEditor from '@/components/editor/RichTextEditor';
+import { createPost, toApiErrorMessage, type PostCategory } from '@/api/posts';
 
 //게시판 종류 상수
 const TOPIC_OPTIONS = [
@@ -31,7 +32,6 @@ export default function CommunityWritePage() {
   const [content, setContent] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [showToast, setShowToast] = useState(false);
 
@@ -68,12 +68,12 @@ export default function CommunityWritePage() {
       return;
     }
     if (!content.trim()) {
-      setToastMsg('내용을 입력해주세요.');
+      setToastMsg('내용을 입력해주세요.');  
       return;
     }
 
-    // 백엔드 category enum으로 변환
-    const category = selectedTopic === 'general' ? 'FREE' : 'QUESTION'; // selectedTopic이 'question'인 경우
+    // 스키마(postCreateRequest)와 동일한 category enum으로 매핑.
+    const category: PostCategory = selectedTopic === 'general' ? 'FREE' : 'QUESTION';
 
     // 요청 바디 구성
     const payload = {
@@ -87,39 +87,9 @@ export default function CommunityWritePage() {
     setToastMsg(null);
 
     try {
-      const res = await fetch(
-        `http://localhost:8000/api/v1/posts?category=${encodeURIComponent(category)}`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            // 개발용 임시 로그인
-            'x-dev-user-id': '1',
-          },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      if (!res.ok) {
-        let msg = `요청 실패 (${res.status})`;
-        try {
-          const data = await res.json();
-          msg = data?.message ?? data?.error ?? msg;
-        } catch {
-          const text = await res.text().catch(() => '');
-          if (text) msg = text;
-        }
-        throw new Error(msg);
-      }
-
-      // 생성된 글 ID 파싱
-      let createdId: number | undefined;
-      try {
-        const created = await res.json();
-        createdId = created?.id;
-      } catch {
-        // 응답 바디가 비어있을 수도 있으니 무시
-      }
+      // 직접 fetch 호출을 제거하고 공통 posts API 계층을 사용.
+      const created = await createPost(payload);
+      const createdId = created?.id;
 
       //  성공 후 이동
       if (createdId) {
@@ -128,7 +98,7 @@ export default function CommunityWritePage() {
         router.push('/community');
       }
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.';
+      const msg = await toApiErrorMessage(e);
       setToastMsg(msg);
     } finally {
       setIsSubmitting(false);

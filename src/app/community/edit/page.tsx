@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { ChevronLeft } from 'lucide-react';
 import RichTextEditor from '@/components/editor/RichTextEditor';
+import { getPostById, toApiErrorMessage, updatePost, type PostCategory } from '@/api/posts';
 
 const TOPIC_OPTIONS = [
   { value: 'general', label: '자유' },
@@ -25,10 +26,8 @@ type TopicValue = (typeof TOPIC_OPTIONS)[number]['value'];
 export default function CommunityEditPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  // 현재 라우팅이 /community/edit 이므로 쿼리로 postId를 받음: /community/edit?postId=123
+  // /community/edit?postId=123
   const postId = searchParams.get('postId') ?? searchParams.get('id');
-
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
   const [selectedTopic, setSelectedTopic] = useState<TopicValue | undefined>(undefined);
   const [title, setTitle] = useState('');
@@ -50,29 +49,16 @@ export default function CommunityEditPage() {
       setErrorMsg(null);
 
       try {
-        const res = await fetch(`${API_BASE_URL}/api/v1/posts/${postId}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            // 개발용 임시 로그인
-            'x-dev-user-id': '1',
-          },
-        });
-
-        if (!res.ok) {
-          const text = await res.text().catch(() => '');
-          throw new Error(text || `요청 실패 (${res.status})`);
-        }
-
-        const data = (await res.json()) as any;
+        // 상세 조회도 공통 posts API 계층을 사용해 base URL/헤더 처리를 통일
+        const data = await getPostById(postId);
 
         const topic: TopicValue = data?.category === 'QUESTION' ? 'question' : 'general';
         setSelectedTopic(topic);
 
-        setTitle(typeof data?.title === 'string' ? data.title : '');
-        setContent(typeof data?.body === 'string' ? data.body : (typeof data?.content === 'string' ? data.content : ''));
+        setTitle(typeof data.title === 'string' ? data.title : '');
+        setContent(typeof data.body === 'string' ? data.body : '');
       } catch (e) {
-        const msg = e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.';
+        const msg = await toApiErrorMessage(e);
         setErrorMsg(msg);
       } finally {
         setIsLoading(false);
@@ -80,7 +66,7 @@ export default function CommunityEditPage() {
     };
 
     void run();
-  }, [API_BASE_URL, postId]);
+  }, [postId]);
 
   const handleCancel = () => {
     router.back();
@@ -109,43 +95,21 @@ export default function CommunityEditPage() {
     setErrorMsg(null);
 
     try {
-      const category = selectedTopic === 'question' ? 'QUESTION' : 'FREE';
+      const category: PostCategory = selectedTopic === 'question' ? 'QUESTION' : 'FREE';
       // 요청 바디 구성
       const payload = {
         title: title.trim(),
         body: content,
-        category, // 백엔드에서 body.category를 읽는 경우 대비
+        category,
       };
 
-      const res = await fetch(
-        `${API_BASE_URL}/api/v1/posts/${postId}?category=${encodeURIComponent(category)}`,
-        {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            // 개발용 임시 로그인
-            'x-dev-user-id': '1',
-          },
-          body: JSON.stringify(payload),
-        },
-      );
-
-      if (!res.ok) {
-        let msg = `요청 실패 (${res.status})`;
-        try {
-          const data = await res.json();
-          msg = data?.message ?? data?.error ?? msg;
-        } catch {
-          const text = await res.text().catch(() => '');
-          if (text) msg = text;
-        }
-        throw new Error(msg);
-      }
+      // 직접 fetch 호출을 제거하고 공통 posts API 계층으로 수정 요청 통일.
+      await updatePost(postId, payload);
 
       // 저장 성공 시 상세로 이동
       router.push(`/community/${postId}`);
     } catch (e) {
-      const msg = e instanceof Error ? e.message : '알 수 없는 오류가 발생했습니다.';
+      const msg = await toApiErrorMessage(e);
       setErrorMsg(msg);
     } finally {
       setIsSaving(false);
