@@ -1,7 +1,11 @@
 import ky, { HTTPError, type Options as KyOptions } from 'ky';
 import { apiErrorSchema } from '@/schema/api/error';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (typeof window !== 'undefined'
+    ? `${window.location.protocol}//${window.location.hostname}:8000`
+    : 'http://localhost:8000');
 
 export const apiInstance = ky.create({
   prefixUrl: `${API_BASE_URL}/api/v1`,
