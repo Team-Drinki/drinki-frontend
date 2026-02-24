@@ -9,9 +9,6 @@ const API_BASE_URL =
 
 export const apiInstance = ky.create({
   prefixUrl: `${API_BASE_URL}/api/v1`,
-  headers: {
-    'Content-Type': 'application/json',
-  },
   credentials: 'include',
   retry: {
     limit: 2,
@@ -19,6 +16,16 @@ export const apiInstance = ky.create({
     statusCodes: [408, 413, 429, 500, 502, 503, 504],
   },
   hooks: {
+    beforeRequest: [
+      request => {
+        // Avoid unnecessary CORS preflight for GET/HEAD requests.
+        if (request.method === 'GET' || request.method === 'HEAD') {
+          request.headers.delete('Content-Type');
+        } else if (!request.headers.has('Content-Type')) {
+          request.headers.set('Content-Type', 'application/json');
+        }
+      },
+    ],
     beforeError: [
       async error => {
         const { response } = error;
