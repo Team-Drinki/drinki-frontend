@@ -3,6 +3,7 @@ import {
   alcoholDetailSchema,
   alcoholListResponseSchema,
   alcoholRecommendationsSchema,
+  AlcoholRecommendation,
   type AlcoholDetail,
   type AlcoholListResponse,
 } from '@/schema/api/alcohol';
