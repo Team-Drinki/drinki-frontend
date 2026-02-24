@@ -72,7 +72,7 @@ export default function CommunityWritePage() {
       return;
     }
 
-    // 스키마(postCreateRequest)와 동일한 category enum으로 매핑.
+    // 스키마(postCreateRequest)와 동일한 category enum으로 매핑
     const category: PostCategory = selectedTopic === 'general' ? 'FREE' : 'QUESTION';
 
     // 요청 바디 구성

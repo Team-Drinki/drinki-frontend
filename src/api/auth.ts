@@ -5,7 +5,7 @@ import { z } from 'zod';
 const userIdSchema = z.number();
 
 export const loginWithGoogle = (): void => {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
   window.location.href = `${apiBaseUrl}/oauth2/authorization/google`;
 };
 
