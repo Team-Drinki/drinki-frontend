@@ -1,12 +1,15 @@
-import { tokenManager } from '@/api/token';
 import { apiInstance } from './instance';
 import { z } from 'zod';
 
-const userIdSchema = z.number();
+const currentUserSchema = z.object({
+  id: z.number(),
+});
 
 export const loginWithGoogle = (): void => {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-  window.location.href = `${apiBaseUrl}/oauth2/authorization/google`;
+  const apiBaseUrl =
+    process.env.NEXT_PUBLIC_API_URL ||
+    `${window.location.protocol}//${window.location.hostname}:8000`;
+  window.location.href = `${apiBaseUrl}/api/v1/auth/login/google`;
 };
 
 export const getCurrentUser = async (): Promise<number | null> => {
@@ -15,15 +18,21 @@ export const getCurrentUser = async (): Promise<number | null> => {
   }
 
   try {
-    const userId = await apiInstance.get('users/me', { redirect: 'manual' }).json<number>();
-    return userIdSchema.parse(userId);
+    const user = await apiInstance.get('users/my', { redirect: 'manual' }).json<unknown>();
+    return currentUserSchema.parse(user).id;
   } catch (error) {
     if (error && typeof error === 'object' && 'response' in error) {
       const httpError = error as { response?: { status?: number; url?: string } };
       const status = httpError.response?.status;
 
       if (status === 401) {
-        return null;
+        try {
+          await refreshToken();
+          const user = await apiInstance.get('users/my', { redirect: 'manual' }).json<unknown>();
+          return currentUserSchema.parse(user).id;
+        } catch {
+          return null;
+        }
       }
 
       if (status && status >= 300 && status < 400) {
@@ -53,5 +62,4 @@ export const logout = async (): Promise<void> => {
     json: {},
     credentials: 'include',
   });
-  tokenManager.clearTokens();
 };
