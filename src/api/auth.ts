@@ -1,15 +1,19 @@
+import { HTTPError } from 'ky';
+import { currentUserIdSchema } from '@/schema/api/auth';
 import { apiInstance } from './instance';
-import { z } from 'zod';
 
-const currentUserSchema = z.object({
-  id: z.number(),
-});
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+
+function isAnonymousStatus(status: number): boolean {
+  return status === 401 || status === 403;
+}
+
+function isRedirectStatus(status: number): boolean {
+  return status >= 300 && status < 400;
+}
 
 export const loginWithGoogle = (): void => {
-  const apiBaseUrl =
-    process.env.NEXT_PUBLIC_API_URL ||
-    `${window.location.protocol}//${window.location.hostname}:8000`;
-  window.location.href = `${apiBaseUrl}/api/v1/auth/login/google`;
+  window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
 };
 
 export const getCurrentUser = async (): Promise<number | null> => {
@@ -18,32 +22,22 @@ export const getCurrentUser = async (): Promise<number | null> => {
   }
 
   try {
-    const user = await apiInstance.get('users/my', { redirect: 'manual' }).json<unknown>();
-    return currentUserSchema.parse(user).id;
+    const raw = await apiInstance.get('users/me', { redirect: 'manual' }).json<unknown>();
+    return currentUserIdSchema.parse(raw);
   } catch (error) {
-    if (error && typeof error === 'object' && 'response' in error) {
-      const httpError = error as { response?: { status?: number; url?: string } };
-      const status = httpError.response?.status;
-
-      if (status === 401) {
-        try {
-          await refreshToken();
-          const user = await apiInstance.get('users/my', { redirect: 'manual' }).json<unknown>();
-          return currentUserSchema.parse(user).id;
-        } catch {
-          return null;
-        }
-      }
-
-      if (status && status >= 300 && status < 400) {
+    if (error instanceof HTTPError) {
+      const { status } = error.response;
+      if (isAnonymousStatus(status) || isRedirectStatus(status)) {
         return null;
       }
     }
 
-    if (error instanceof Error) {
-      if (error.message.includes('CORS') || error.message.includes('accounts.google.com')) {
-        return null;
-      }
+    // Browser CORS/OAuth redirects can throw network-level errors before HTTP status is available.
+    if (
+      error instanceof Error &&
+      (error.message.includes('CORS') || error.message.includes('accounts.google.com'))
+    ) {
+      return null;
     }
 
     return null;
@@ -51,15 +45,9 @@ export const getCurrentUser = async (): Promise<number | null> => {
 };
 
 export const refreshToken = async (): Promise<void> => {
-  await apiInstance.post('auth/refresh', {
-    json: {},
-    credentials: 'include',
-  });
+  await apiInstance.post('auth/refresh');
 };
 
 export const logout = async (): Promise<void> => {
-  await apiInstance.post('auth/logout', {
-    json: {},
-    credentials: 'include',
-  });
+  await apiInstance.post('auth/logout');
 };

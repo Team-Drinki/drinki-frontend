@@ -18,10 +18,16 @@ export const apiInstance = ky.create({
   hooks: {
     beforeRequest: [
       request => {
-        // Avoid unnecessary CORS preflight for GET/HEAD requests.
-        if (request.method === 'GET' || request.method === 'HEAD') {
+        const method = request.method.toUpperCase();
+        const isBodylessMethod = method === 'GET' || method === 'HEAD';
+        const hasBody = request.body !== null;
+
+        if (isBodylessMethod || !hasBody) {
           request.headers.delete('Content-Type');
-        } else if (!request.headers.has('Content-Type')) {
+          return;
+        }
+
+        if (!request.headers.has('Content-Type')) {
           request.headers.set('Content-Type', 'application/json');
         }
       },
@@ -31,14 +37,19 @@ export const apiInstance = ky.create({
         const { response } = error;
 
         if (response && error instanceof HTTPError) {
-          try {
-            const body = await response.json();
-            const parsed = apiErrorSchema.safeParse(body);
+          const contentType = response.headers.get('content-type') || '';
+          const isJsonResponse = contentType.includes('application/json');
 
-            if (parsed.success) {
-              error.message = parsed.data.message || error.message;
-            }
-          } catch {}
+          if (isJsonResponse) {
+            try {
+              const body = await response.clone().json();
+              const parsed = apiErrorSchema.safeParse(body);
+
+              if (parsed.success) {
+                error.message = parsed.data.message || error.message;
+              }
+            } catch {}
+          }
         }
 
         return error;
