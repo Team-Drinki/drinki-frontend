@@ -2,6 +2,8 @@ import { apiInstance, type ApiOptions } from './instance';
 import {
   alcoholDetailSchema,
   alcoholListResponseSchema,
+  alcoholRecommendationsSchema,
+  AlcoholRecommendation,
   type AlcoholDetail,
   type AlcoholListResponse,
 } from '@/schema/api/alcohol';
@@ -54,9 +56,7 @@ const defaultAlcoholListParams: Required<AlcoholListParams> = {
   rating: 0,
 };
 
-export async function getAlcoholList(
-  params: AlcoholListParams = {}
-): Promise<AlcoholListResponse> {
+export async function getAlcoholList(params: AlcoholListParams = {}): Promise<AlcoholListResponse> {
   const merged = { ...defaultAlcoholListParams, ...params };
   const url = new URL('/api/v1/alcohols/search', API_BASE_URL);
   url.searchParams.set('page', String(merged.page));
@@ -95,4 +95,18 @@ export async function getWishAlcoholList(
   url.searchParams.set('size', String(size));
   url.searchParams.set('sort', sort);
   return fetchAlcoholListByUrl(url);
+}
+
+export async function getAlcoholRecommendations(
+  limit = 3,
+  options?: ApiOptions
+): Promise<AlcoholRecommendation[]> {
+  const response = await apiInstance
+    .get('alcohols/recommend', {
+      ...options,
+      searchParams: { limit },
+    })
+    .json<unknown>();
+
+  return alcoholRecommendationsSchema.parse(response).recommendations;
 }
