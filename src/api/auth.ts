@@ -22,7 +22,7 @@ export const getCurrentUser = async (): Promise<number | null> => {
   }
 
   try {
-    const { data: raw } = await apiInstance.get<unknown>('users/me');
+    const { data: raw } = await apiInstance.get<unknown>('users/my');
     return currentUserIdSchema.parse(raw);
   } catch (error) {
     if (axios.isAxiosError(error)) {
