@@ -7,7 +7,6 @@ import Title from '@/components/common/Title';
 import DrinkCard from '@/components/common/DrinkCard';
 import { HotCommunityPostCard } from '@/components/common/HotCommunityPostCard';
 import { homeHotContentQueryOptions } from '@/query/options/home';
-import { useAuthStatus } from '@/hooks/useAuthStatus';
 import AuthGuard from '@/components/auth/AuthGuard';
 
 export default function Home() {
@@ -19,11 +18,7 @@ export default function Home() {
 }
 
 function HomeContent() {
-  const { isReady, isAuthenticated } = useAuthStatus();
-  const { data } = useQuery({
-    ...homeHotContentQueryOptions,
-    enabled: isReady && isAuthenticated,
-  });
+  const { data } = useQuery(homeHotContentQueryOptions);
 
   const hotTastingNotes = data?.hotTastingNotes?.length ? data.hotTastingNotes : tastingNotes;
   const hotCommunityPosts = data?.hotCommunityPosts?.length ? data.hotCommunityPosts : communityPosts;

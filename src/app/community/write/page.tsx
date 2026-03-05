@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -13,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import { ChevronLeft } from 'lucide-react';
 import RichTextEditor from '@/components/editor/RichTextEditor';
+import { createPost, toApiErrorMessage, type PostCategory } from '@/api/posts';
 
 //게시판 종류 상수
 const TOPIC_OPTIONS = [
@@ -23,17 +25,105 @@ const TOPIC_OPTIONS = [
 type TopicValue = (typeof TOPIC_OPTIONS)[number]['value'];
 
 export default function CommunityWritePage() {
+  const router = useRouter();
+
   const [selectedTopic, setSelectedTopic] = useState<TopicValue | undefined>(undefined);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
 
-  const handleSubmit = () => {
-    // TODO: 글 작성 로직 구현
-    console.log('글 작성:', { selectedTopic, title, content });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [showToast, setShowToast] = useState(false);
+
+  useEffect(() => {
+    if (!toastMsg) return;
+
+    // 등장
+    setShowToast(true);
+
+    // 3초 유지 후 퇴장 시작
+    const hideTimer = setTimeout(() => {
+      setShowToast(false);
+    }, 3000);
+
+    // 퇴장 애니메이션 끝난 뒤 메시지 제거
+    const clearTimer = setTimeout(() => {
+      setToastMsg(null);
+    }, 3300);
+
+    return () => {
+      clearTimeout(hideTimer);
+      clearTimeout(clearTimer);
+    };
+  }, [toastMsg]);
+
+  const handleSubmit = async () => {
+    // 프론트 유효성 검사
+    if (!selectedTopic) {
+      setToastMsg('게시판 주제를 선택해주세요.');
+      return;
+    }
+    if (!title.trim()) {
+      setToastMsg('제목을 입력해주세요.');
+      return;
+    }
+    if (!content.trim()) {
+      setToastMsg('내용을 입력해주세요.');  
+      return;
+    }
+
+    // 스키마(postCreateRequest)와 동일한 category enum으로 매핑
+    const category: PostCategory = selectedTopic === 'general' ? 'FREE' : 'QUESTION';
+
+    // 요청 바디 구성
+    const payload = {
+      title: title.trim(),
+      body: content,
+      category, 
+      // imageUrl: undefined,
+    };
+
+    setIsSubmitting(true);
+    setToastMsg(null);
+
+    try {
+      // 직접 fetch 호출을 제거하고 공통 posts API 계층을 사용.
+      const created = await createPost(payload);
+      const createdId = created?.id;
+
+      //  성공 후 이동
+      if (createdId) {
+        router.push(`/community/${createdId}`);
+      } else {
+        router.push('/community');
+      }
+    } catch (e) {
+      const msg = await toApiErrorMessage(e);
+      setToastMsg(msg);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <div className="flex-1">
+      {/* 팝업 토스트 */}
+      {toastMsg && (
+        <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+          <div
+            role="alert"
+            className={[
+              'pointer-events-none w-full max-w-sm rounded-xl border px-4 py-3 text-sm shadow-lg',
+              'bg-red-50 border-red-200 text-red-800',
+              'transition-all duration-300 ease-out',
+              showToast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2',
+            ].join(' ')}
+          >
+            {toastMsg}
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto w-full max-w-4xl 2xl:max-w-5xl px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
         {/* 뒤로가기 버튼 */}
         <div className="mb-6">
@@ -106,9 +196,10 @@ export default function CommunityWritePage() {
           <div className="flex justify-end">
             <Button
               type="submit"
-              className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 xl:px-6 py-2 xl:py-1.5 rounded-lg font-medium text-base xl:text-sm"
+              disabled={isSubmitting}
+              className="bg-gray-300 hover:bg-gray-400 disabled:opacity-60 text-gray-700 px-8 xl:px-6 py-2 xl:py-1.5 rounded-lg font-medium text-base xl:text-sm"
             >
-              등록하기
+              {isSubmitting ? '등록 중...' : '등록하기'}
             </Button>
           </div>
         </form>

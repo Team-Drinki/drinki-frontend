@@ -1,8 +1,8 @@
-import { HTTPError } from 'ky';
+import axios from 'axios';
 import { currentUserIdSchema } from '@/schema/api/auth';
 import { apiInstance } from './instance';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
 function isAnonymousStatus(status: number): boolean {
   return status === 401 || status === 403;
@@ -13,7 +13,7 @@ function isRedirectStatus(status: number): boolean {
 }
 
 export const loginWithGoogle = (): void => {
-  window.location.href = `${API_BASE_URL}/oauth2/authorization/google`;
+  window.location.href = `${API_BASE_URL}/api/v1/auth/login/google`;
 };
 
 export const getCurrentUser = async (): Promise<number | null> => {
@@ -22,11 +22,11 @@ export const getCurrentUser = async (): Promise<number | null> => {
   }
 
   try {
-    const raw = await apiInstance.get('users/me', { redirect: 'manual' }).json<unknown>();
+    const { data: raw } = await apiInstance.get<unknown>('users/my');
     return currentUserIdSchema.parse(raw);
   } catch (error) {
-    if (error instanceof HTTPError) {
-      const { status } = error.response;
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status ?? 0;
       if (isAnonymousStatus(status) || isRedirectStatus(status)) {
         return null;
       }
