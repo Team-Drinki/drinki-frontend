@@ -1,12 +1,19 @@
-import { tokenManager } from '@/api/token';
+import axios from 'axios';
+import { currentUserIdSchema } from '@/schema/api/auth';
 import { apiInstance } from './instance';
-import { z } from 'zod';
 
-const userIdSchema = z.number();
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+
+function isAnonymousStatus(status: number): boolean {
+  return status === 401 || status === 403;
+}
+
+function isRedirectStatus(status: number): boolean {
+  return status >= 300 && status < 400;
+}
 
 export const loginWithGoogle = (): void => {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-  window.location.href = `${apiBaseUrl}/oauth2/authorization/google`;
+  window.location.href = `${API_BASE_URL}/api/v1/auth/login/google`;
 };
 
 export const getCurrentUser = async (): Promise<number | null> => {
@@ -15,26 +22,22 @@ export const getCurrentUser = async (): Promise<number | null> => {
   }
 
   try {
-    const userId = await apiInstance.get('users/me', { redirect: 'manual' }).json<number>();
-    return userIdSchema.parse(userId);
+    const { data: raw } = await apiInstance.get<unknown>('users/me');
+    return currentUserIdSchema.parse(raw);
   } catch (error) {
-    if (error && typeof error === 'object' && 'response' in error) {
-      const httpError = error as { response?: { status?: number; url?: string } };
-      const status = httpError.response?.status;
-
-      if (status === 401) {
-        return null;
-      }
-
-      if (status && status >= 300 && status < 400) {
+    if (axios.isAxiosError(error)) {
+      const status = error.response?.status ?? 0;
+      if (isAnonymousStatus(status) || isRedirectStatus(status)) {
         return null;
       }
     }
 
-    if (error instanceof Error) {
-      if (error.message.includes('CORS') || error.message.includes('accounts.google.com')) {
-        return null;
-      }
+    // Browser CORS/OAuth redirects can throw network-level errors before HTTP status is available.
+    if (
+      error instanceof Error &&
+      (error.message.includes('CORS') || error.message.includes('accounts.google.com'))
+    ) {
+      return null;
     }
 
     return null;
@@ -42,16 +45,9 @@ export const getCurrentUser = async (): Promise<number | null> => {
 };
 
 export const refreshToken = async (): Promise<void> => {
-  await apiInstance.post('auth/refresh', {
-    json: {},
-    credentials: 'include',
-  });
+  await apiInstance.post('auth/refresh');
 };
 
 export const logout = async (): Promise<void> => {
-  await apiInstance.post('auth/logout', {
-    json: {},
-    credentials: 'include',
-  });
-  tokenManager.clearTokens();
+  await apiInstance.post('auth/logout');
 };

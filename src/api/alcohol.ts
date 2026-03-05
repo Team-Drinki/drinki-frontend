@@ -2,30 +2,23 @@ import { apiInstance, type ApiOptions } from './instance';
 import {
   alcoholDetailSchema,
   alcoholListResponseSchema,
+  alcoholRecommendationsSchema,
+  AlcoholRecommendation,
   type AlcoholDetail,
   type AlcoholListResponse,
 } from '@/schema/api/alcohol';
 
 export async function getAlcoholDetail(id: number, options?: ApiOptions): Promise<AlcoholDetail> {
-  const response = await apiInstance.get(`alcohols/${id}`, options).json<unknown>();
-  return alcoholDetailSchema.parse(response);
+  const { data } = await apiInstance.get<unknown>(`alcohols/${id}`, options);
+  return alcoholDetailSchema.parse(data);
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
-
-async function fetchAlcoholListByUrl(url: URL): Promise<AlcoholListResponse> {
-  const response = await fetch(url.toString(), {
-    method: 'GET',
-    credentials: 'include',
-    redirect: 'manual',
-  });
-
-  if (!response.ok) {
-    throw new Error(`Alcohol list request failed: ${response.status}`);
-  }
-
-  const json = await response.json();
-  return alcoholListResponseSchema.parse(json);
+async function fetchAlcoholList(
+  path: string,
+  params: Record<string, string | number>
+): Promise<AlcoholListResponse> {
+  const { data } = await apiInstance.get<unknown>(path, { params });
+  return alcoholListResponseSchema.parse(data);
 }
 
 export interface AlcoholListParams {
@@ -54,23 +47,20 @@ const defaultAlcoholListParams: Required<AlcoholListParams> = {
   rating: 0,
 };
 
-export async function getAlcoholList(
-  params: AlcoholListParams = {}
-): Promise<AlcoholListResponse> {
+export async function getAlcoholList(params: AlcoholListParams = {}): Promise<AlcoholListResponse> {
   const merged = { ...defaultAlcoholListParams, ...params };
-  const url = new URL('/api/v1/alcohols/search', API_BASE_URL);
-  url.searchParams.set('page', String(merged.page));
-  url.searchParams.set('size', String(merged.size));
-  url.searchParams.set('sort', merged.sort);
-  url.searchParams.set('query', merged.query);
-  url.searchParams.set('category', merged.category);
-  url.searchParams.set('location', merged.location);
-  url.searchParams.set('style', merged.style);
-  url.searchParams.set('priceMin', String(merged.priceMin));
-  url.searchParams.set('priceMax', String(merged.priceMax));
-  url.searchParams.set('rating', String(merged.rating));
-
-  return fetchAlcoholListByUrl(url);
+  return fetchAlcoholList('alcohols/search', {
+    page: merged.page,
+    size: merged.size,
+    sort: merged.sort,
+    query: merged.query,
+    category: merged.category,
+    location: merged.location,
+    style: merged.style,
+    priceMin: merged.priceMin,
+    priceMax: merged.priceMax,
+    rating: merged.rating,
+  });
 }
 
 export async function getRecommendedAlcoholList(
@@ -78,10 +68,7 @@ export async function getRecommendedAlcoholList(
 ): Promise<AlcoholListResponse> {
   const page = params.page ?? 1;
   const size = params.size ?? 9;
-  const url = new URL('/api/v1/alcohols/recommend', API_BASE_URL);
-  url.searchParams.set('page', String(page));
-  url.searchParams.set('size', String(size));
-  return fetchAlcoholListByUrl(url);
+  return fetchAlcoholList('alcohols/recommend', { page, size });
 }
 
 export async function getWishAlcoholList(
@@ -90,9 +77,16 @@ export async function getWishAlcoholList(
   const page = params.page ?? 1;
   const size = params.size ?? 9;
   const sort = params.sort ?? 'CreatedAt';
-  const url = new URL('/api/v1/wishes/', API_BASE_URL);
-  url.searchParams.set('page', String(page));
-  url.searchParams.set('size', String(size));
-  url.searchParams.set('sort', sort);
-  return fetchAlcoholListByUrl(url);
+  return fetchAlcoholList('wishes/', { page, size, sort });
+}
+
+export async function getAlcoholRecommendations(
+  limit = 3,
+  options?: ApiOptions
+): Promise<AlcoholRecommendation[]> {
+  const { data } = await apiInstance.get<unknown>('alcohols/recommend', {
+    ...options,
+    params: { limit },
+  });
+  return alcoholRecommendationsSchema.parse(data).recommendations;
 }

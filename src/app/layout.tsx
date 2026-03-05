@@ -1,13 +1,18 @@
 import './globals.css';
 import { ReactNode } from 'react';
-import { Inter } from 'next/font/google';
+import localFont from 'next/font/local';
 import { cn } from '@/lib/utils';
 import ReactQueryProvider from '@/lib/ReactQueryProvider';
 import SessionProvider from '@/components/SessionProvider';
 import { Toaster } from '@/components/ui/sonner';
 import AppWrapper from './AppWrapper';
 
-const inter = Inter({ subsets: ['latin'] });
+const pretendard = localFont({
+  src: '../../public/fonts/Pretendard-Regular.woff2',
+  weight: '400',
+  style: 'normal',
+  display: 'swap',
+});
 
 export const metadata = {
   title: 'Drinki',
@@ -17,7 +22,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
-      <body className={cn(inter.className, 'flex flex-col min-h-screen')}>
+      <body className={cn(pretendard.className, 'flex flex-col min-h-screen')}>
         <ReactQueryProvider>
           <SessionProvider>
             <AppWrapper>{children}</AppWrapper>

@@ -1,5 +1,5 @@
 import { apiInstance } from '@/api/instance';
-import { HTTPError } from 'ky';
+import axios from 'axios';
 
 // Backend schema reference:
 // - drinki-backend-ts/src/modules/post/model.ts
@@ -81,21 +81,14 @@ export type ListPostsParams = {
 
 //write/edit 페이지에서 동일한 에러 메시지를 쓰기 위한 공통 변환 함수.
 export async function toApiErrorMessage(error: unknown, fallback = '알 수 없는 오류가 발생했습니다.') {
-  if (error instanceof HTTPError) {
-    const status = error.response.status;
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status ?? 0;
     let message = `요청 실패 (${status})`;
 
     try {
-      const body = (await error.response.clone().json()) as { message?: string; error?: string };
+      const body = (error.response?.data ?? {}) as { message?: string; error?: string };
       message = body?.message ?? body?.error ?? message;
-    } catch {
-      try {
-        const text = await error.response.clone().text();
-        if (text) message = text;
-      } catch {
-        // no-op: 응답 바디를 더 이상 읽을 수 없는 경우 기본 메시지를 유지한다.
-      }
-    }
+    } catch {}
 
     return message;
   }
@@ -121,21 +114,18 @@ export const createPost = async (
   payload: CreatePostPayload,
 ): Promise<CreatePostResponse> => {
   // POST /api/v1/posts
-  return apiInstance
-    .post('posts', {
-      json: payload,
-      headers: withDevAuthHeader(),
-    })
-    .json<CreatePostResponse>();
+  const { data } = await apiInstance.post<CreatePostResponse>('posts', payload, {
+    headers: withDevAuthHeader(),
+  });
+  return data;
 };
 
 export const getPostById = async (postId: string | number): Promise<PostDetailResponse> => {
   // GET /api/v1/posts/:postId
-  return apiInstance
-    .get(`posts/${postId}`, {
-      headers: withDevAuthHeader(),
-    })
-    .json<PostDetailResponse>();
+  const { data } = await apiInstance.get<PostDetailResponse>(`posts/${postId}`, {
+    headers: withDevAuthHeader(),
+  });
+  return data;
 };
 
 export const updatePost = async (
@@ -143,12 +133,10 @@ export const updatePost = async (
   payload: UpdatePostPayload,
 ): Promise<PostDetailResponse> => {
   // PUT /api/v1/posts/:postId
-  return apiInstance
-    .put(`posts/${postId}`, {
-      json: payload,
-      headers: withDevAuthHeader(),
-    })
-    .json<PostDetailResponse>();
+  const { data } = await apiInstance.put<PostDetailResponse>(`posts/${postId}`, payload, {
+    headers: withDevAuthHeader(),
+  });
+  return data;
 };
 
 export const listPosts = async (params: ListPostsParams): Promise<PostListResponse> => {
@@ -159,7 +147,8 @@ export const listPosts = async (params: ListPostsParams): Promise<PostListRespon
   if (params.sort) searchParams.sort = params.sort;
   if (params.category) searchParams.category = params.category;
 
-  return apiInstance.get('posts', { searchParams }).json<PostListResponse>();
+  const { data } = await apiInstance.get<PostListResponse>('posts', { params: searchParams });
+  return data;
 };
 
 export const deletePost = async (postId: string | number): Promise<void> => {
