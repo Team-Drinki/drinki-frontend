@@ -8,9 +8,9 @@ import PostsPagination from '@/components/common/PostsPagination';
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { alcoholListQueryOptions } from '@/query/options/alcohol';
 import Link from 'next/link';
 import AuthGuard from '@/components/auth/AuthGuard';
+import { listPosts, type PostCategory } from '@/api/posts';
 
 export default function CommunityPage() {
   return (
@@ -23,22 +23,29 @@ export default function CommunityPage() {
 function CommunityPageContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [query, setQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<PostCategory>('FREE');
   const router = useRouter();
 
-  const queryOptions = useMemo(
-    () =>
-      alcoholListQueryOptions({
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ['community', 'posts', currentPage, selectedCategory],
+    queryFn: () =>
+      listPosts({
         page: currentPage,
         size: 9,
-        sort: 'View',
-        query,
+        category: selectedCategory,
+        sort: 'createdAt',
       }),
-    [currentPage, query]
-  );
+    retry: false,
+    throwOnError: false,
+  });
 
-  const { data, isLoading, isError } = useQuery(queryOptions);
-  const items = data?.items ?? [];
-  const totalPages = data?.pageUtil.totalPages ?? 1;
+  const items = useMemo(() => {
+    const base = data?.items ?? [];
+    const trimmed = query.trim().toLowerCase();
+    if (!trimmed) return base;
+    return base.filter(item => item.title.toLowerCase().includes(trimmed));
+  }, [data?.items, query]);
+  const totalPages = data?.pageUtil?.totalPages ?? 1;
 
   return (
     <div>
@@ -54,10 +61,32 @@ function CommunityPageContent() {
         <div className="h-16" />
         <div className="flex flex-row justify-between w-full px-[124px]">
           <div className="flex flex-row gap-3">
-            <CustomButton className="bg-grey-300 text-button text-brown rounded-[8px] px-[31px] py-[11.5px]">
+            <CustomButton
+              type="button"
+              onClick={() => {
+                setSelectedCategory('FREE');
+                setCurrentPage(1);
+              }}
+              className={
+                selectedCategory === 'FREE'
+                  ? 'bg-yellow-main text-button text-brown rounded-[8px] px-[31px] py-[11.5px]'
+                  : 'bg-grey-300 text-button text-brown rounded-[8px] px-[31px] py-[11.5px]'
+              }
+            >
               자유
             </CustomButton>
-            <CustomButton className="bg-yellow-main text-button text-brown rounded-[8px] px-[31px] py-[11.5px]">
+            <CustomButton
+              type="button"
+              onClick={() => {
+                setSelectedCategory('QUESTION');
+                setCurrentPage(1);
+              }}
+              className={
+                selectedCategory === 'QUESTION'
+                  ? 'bg-yellow-main text-button text-brown rounded-[8px] px-[31px] py-[11.5px]'
+                  : 'bg-grey-300 text-button text-brown rounded-[8px] px-[31px] py-[11.5px]'
+              }
+            >
               질문
             </CustomButton>
           </div>
@@ -79,13 +108,13 @@ function CommunityPageContent() {
               items.map(item => (
                 <Link href={`/community/${item.id}`} key={item.id}>
                   <DrinkCard
-                    title={item.name}
-                    author={item.category}
-                    imageUrl={item.image ?? '/images/whisky.png'}
-                    avatarUrl="/images/avatar.png"
-                    likes={item.wish}
+                    title={item.title}
+                    author={item.author?.nickname ?? 'Unknown'}
+                    imageUrl={item.imageUrl ?? '/images/whisky.png'}
+                    avatarUrl={item.author?.profileImageUrl ?? '/images/avatar.png'}
+                    likes={item.likeCnt}
                     views={item.viewCnt}
-                    comments={item.noteCnt}
+                    comments={item.commentCnt}
                   />
                 </Link>
               ))}
