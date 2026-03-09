@@ -30,26 +30,26 @@ export function Navibar() {
   }, [isDropdownOpen]);
 
   return (
-    <nav className="h-32 sticky top-0 z-50 w-full bg-white">
-      <div className="h-full container mx-auto flex items-center justify-between py-4 px-6">
-        <div className="flex flex-row justify-start items-center min-w-3/5 max-md:w-full">
+    <nav className="sticky top-0 z-50 h-20 w-full bg-white md:h-32">
+      <div className="container mx-auto flex h-full items-center justify-between px-4 py-3 md:px-6 md:py-4">
+        <div className="flex min-w-0 flex-1 flex-row items-center justify-start">
           <Link href="/">
             <img
               src="/logo/drinki-logo.png"
               alt="Drinki 로고"
-              className="w-36 rounded-xl hover:opacity-80 transition max-md:w-20"
+              className="w-22 rounded-xl transition hover:opacity-80 md:w-36"
             />
           </Link>
-          <div className="w-full text-dark-brown text-head6 ml-10 max-md:ml-0 flex flex-row items-center justify-start text-brown-800 font-medium">
+          <div className="ml-3 flex w-full min-w-0 flex-row items-center justify-start text-brown-800 md:ml-10">
             <div
               ref={dropdownRef}
-              className="flex-1 relative group flex items-center justify-center"
+              className="group relative flex flex-1 items-center justify-center"
             >
               <Button
                 variant="outline"
                 className={cn(
                   isMobile && isDropdownOpen && 'bg-yellow-500',
-                  'max-md:text-xs font-semibold border-0 w-full leading-none p-0 h-auto shadow-none text-[1.25rem] hover:bg-yellow-500 rounded-md'
+                  'h-auto w-full rounded-md border-0 p-0 text-[13px] leading-none font-semibold shadow-none hover:bg-yellow-500 md:text-[1.25rem]'
                 )}
                 onClick={() => setDropdownOpen(prev => !prev)}
               >
@@ -59,20 +59,20 @@ export function Navibar() {
             </div>
             <Link
               href="/tasting-note"
-              className="text-center leading-none py-0.5 max-md:text-xs hover:bg-yellow-500 flex-1 rounded-md"
+              className="flex-1 rounded-md py-0.5 text-center text-[13px] leading-none font-semibold hover:bg-yellow-500 md:text-[1.25rem]"
             >
               Tasting Note
             </Link>
             <Link
               href="/community"
-              className="leading-none py-0.5 max-md:text-xs text-center hover:bg-yellow-500 flex-1 rounded-md"
+              className="flex-1 rounded-md py-0.5 text-center text-[13px] leading-none font-semibold hover:bg-yellow-500 md:text-[1.25rem]"
             >
               Community
             </Link>
           </div>
         </div>
-        <Link href="/mypage">
-          <MypageIcon className={isMobile ? 'size-5' : ''} />
+        <Link href="/mypage" className="ml-3 shrink-0">
+          <MypageIcon className={isMobile ? 'size-4.5' : 'size-6'} />
         </Link>
       </div>
     </nav>

@@ -24,16 +24,26 @@ function HomeContent() {
   const hotCommunityPosts = data?.hotCommunityPosts?.length ? data.hotCommunityPosts : communityPosts;
 
   return (
-    <div className="flex-1">
-      <header className="relative w-full h-140">
-        <Image src="/images/main-banner.png" alt="Main Banner" fill className="object-cover" />
+    <div className="flex-1 w-full">
+      <header className="w-full px-4 md:px-6 lg:px-8">
+        <div className="mx-auto w-full max-w-[1200px]">
+          <div className="relative w-full aspect-[16/6] min-h-[180px] max-h-[420px] overflow-hidden">
+            <Image
+              src="/images/main-banner.png"
+              alt="Main Banner"
+              fill
+              className="object-cover object-center"
+              sizes="(max-width: 768px) 100vw, 1200px"
+            />
+          </div>
+        </div>
       </header>
-      <main className="flex flex-col gap-20 my-20">
+      <main className="mx-auto my-10 flex w-full max-w-[1200px] flex-col gap-12 px-4 md:my-14 md:gap-16 md:px-6 lg:px-8">
         <section>
-          <Title className="mx-35 mb-8">
+          <Title className="mb-5">
             <h2>Hot Tasting Note</h2>
           </Title>
-          <div className="overflow-x-auto py-14 pl-8 bg-grey-100 scrollbar-hide">
+          <div className="overflow-x-auto bg-grey-100 px-4 py-6 scrollbar-hide md:px-6">
             <div className="flex flex-row gap-6 w-max px-1">
               {hotTastingNotes.map(note => (
                 <DrinkCard
@@ -51,11 +61,11 @@ function HomeContent() {
           </div>
         </section>
         <section>
-          <Title className="mx-35">
+          <Title className="mb-5">
             <h2>Hot Community Post</h2>
           </Title>
-          <div className="bg-grey-100 px-40 py-10">
-            <div className="grid grid-rows-5 grid-flow-col gap-x-17 gap-y-2">
+          <div className="bg-grey-100 px-4 py-6 md:px-6 md:py-8 lg:px-8">
+            <div className="grid grid-cols-1 gap-x-10 gap-y-2 md:grid-cols-2">
               {hotCommunityPosts.map((post, index) => (
                 <HotCommunityPostCard
                   key={post.id}

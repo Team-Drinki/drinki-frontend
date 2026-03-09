@@ -9,9 +9,11 @@ interface TitleProps {
 
 export default function Title({ className, children }: TitleProps) {
   return (
-    <div className={cn('flex flex-row items-center h-fit gap-0', className)}>
-      <span className="text-head3">{children}</span>
-      <ChevronRight className="size-12" />
+    <div className={cn('flex h-fit flex-row items-center gap-1 md:gap-0', className)}>
+      <span className="whitespace-nowrap text-[clamp(1.75rem,7.2vw,2.5rem)] leading-[1.2] font-bold">
+        {children}
+      </span>
+      <ChevronRight className="size-[clamp(1.75rem,6vw,3rem)]" />
     </div>
   );
 }
