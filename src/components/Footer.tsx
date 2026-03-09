@@ -8,8 +8,11 @@ export default function Footer() {
 
   if (isMobile)
     return (
-      <footer className="bg-brown text-white gap-8 py-6 px-12 flex flex-col items-center justify-between">
-        <div className="bg-white py-6 px-4">
+      <footer
+        className="text-black gap-8 py-6 px-12 flex flex-col items-center justify-between"
+        style={{ backgroundColor: '#E6D3C2' }}
+      >
+        <div className="py-6 px-4" style={{ backgroundColor: '#E6D3C2' }}>
           <img src="/logo/drinki-logo.png" alt="Drinki 로고" className="w-20" />
         </div>
 
@@ -34,8 +37,11 @@ export default function Footer() {
       </footer>
     );
   return (
-    <footer className="bg-brown text-white py-12 px-24 flex flex-row items-center justify-between">
-      <div className="bg-white py-12 px-8">
+    <footer
+      className="text-black py-12 px-24 flex flex-row items-center justify-between"
+      style={{ backgroundColor: '#E6D3C2' }}
+    >
+      <div className="py-12 px-8" style={{ backgroundColor: '#E6D3C2' }}>
         <img src="/logo/drinki-logo.png" alt="Drinki 로고" className="w-36" />
       </div>
 
