@@ -50,17 +50,20 @@ function CommunityPageContent() {
   return (
     <div>
       <BoardHeader />
-      <main className="pt-25 flex flex-col items-center w-full">
-        <Searchbar
-          placeholder="커뮤니티 검색"
-          onSearch={nextQuery => {
-            setCurrentPage(1);
-            setQuery(nextQuery.trim());
-          }}
-        />
-        <div className="h-16" />
-        <div className="flex flex-row justify-between w-full px-[124px]">
-          <div className="flex flex-row gap-3">
+      <main className="mx-auto flex w-full max-w-[1200px] flex-col px-5 pb-20 pt-8 sm:px-8 sm:pt-10 lg:px-10">
+        <div className="flex justify-center">
+          <Searchbar
+            className="max-w-[726px]"
+            placeholder="커뮤니티 검색"
+            onSearch={nextQuery => {
+              setCurrentPage(1);
+              setQuery(nextQuery.trim());
+            }}
+          />
+        </div>
+        <div className="h-8 sm:h-12" />
+        <div className="flex items-start justify-between gap-4 sm:items-center">
+          <div className="flex flex-wrap gap-3">
             <CustomButton
               type="button"
               onClick={() => {
@@ -69,8 +72,8 @@ function CommunityPageContent() {
               }}
               className={
                 selectedCategory === 'FREE'
-                  ? 'bg-yellow-main text-button text-brown rounded-[8px] px-[31px] py-[11.5px]'
-                  : 'bg-grey-300 text-button text-brown rounded-[8px] px-[31px] py-[11.5px]'
+                  ? 'rounded-[8px] bg-yellow-main px-6 py-2.5 text-button text-brown'
+                  : 'rounded-[8px] bg-grey-300 px-6 py-2.5 text-button text-brown'
               }
             >
               자유
@@ -83,8 +86,8 @@ function CommunityPageContent() {
               }}
               className={
                 selectedCategory === 'QUESTION'
-                  ? 'bg-yellow-main text-button text-brown rounded-[8px] px-[31px] py-[11.5px]'
-                  : 'bg-grey-300 text-button text-brown rounded-[8px] px-[31px] py-[11.5px]'
+                  ? 'rounded-[8px] bg-yellow-main px-6 py-2.5 text-button text-brown'
+                  : 'rounded-[8px] bg-grey-300 px-6 py-2.5 text-button text-brown'
               }
             >
               질문
@@ -92,15 +95,15 @@ function CommunityPageContent() {
           </div>
           <CustomButton
             onClick={() => router.push('/community/write')}
-            className="flex border-2 border-brown text-brown rounded-[8px] bg-transparent flex-row items-center py-2.5 px-4.5 gap-[9px]"
+            className="flex w-fit shrink-0 flex-row items-center gap-[9px] rounded-[8px] border-2 border-brown bg-transparent px-4 py-2.5 text-brown"
           >
-            <NewPost className="size-6 text-brown" />새 글 쓰기
+            <NewPost className="size-5 text-brown sm:size-6" />새 글 쓰기
           </CustomButton>
         </div>
         <div className="h-6" />
 
-        <div className="flex justify-start w-full px-[124px]">
-          <div className="grid grid-cols-3 max-2xl:grid-cols-2 max-lg:grid-cols-1 gap-5">
+        <div className="w-full">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
             {isLoading && <p className="text-grey-700">불러오는 중...</p>}
             {isError && <p className="text-grey-700">목록을 불러오지 못했습니다.</p>}
             {!isLoading &&
@@ -121,13 +124,13 @@ function CommunityPageContent() {
           </div>
         </div>
 
-        <div className="h-25" />
+        <div className="h-12 sm:h-16" />
         <PostsPagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={Math.max(1, totalPages)}
           onPageChange={setCurrentPage}
         />
-        <div className="h-[293px]" />
+        <div className="h-12 sm:h-20" />
       </main>
     </div>
   );
