@@ -1,198 +1,246 @@
+'use client';
+
+import { useMemo, useState } from 'react';
+import { useParams } from 'next/navigation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import BackButton from '@/components/common/BackButton';
-import { tastingNoteDetail } from '@/app/mockup';
-import PostTitle from '@/components/common/PostTitle';
-import { toAlcoholLabel } from '@/utils/alcoholTypeConvertor';
-import Rating from '@/components/common/Rating';
-import CommentSection from '@/components/comment/CommentSection';
-import AppearanceBar from '@/components/tasting-note/AppearanceBar';
-import FlavorTile from '@/components/tasting-note/FlavorTile';
 import ImageGallery from '@/components/ImageGallery';
-import type { FlavorItemDef, BegFlavorItemDef } from '@/components/tasting-note/FlavorGroups';
+import FlavorTile from '@/components/tasting-note/FlavorTile';
+import { authQueryOptions } from '@/query/options/auth';
+import { tastingNoteDetailQueryOptions } from '@/query/options/tasting-note';
 import {
   FLAVOR_GROUPS_BEGINNER,
   FLAVOR_GROUPS_EXPERT,
+  type BegFlavorItemDef,
+  type FlavorItemDef,
 } from '@/components/tasting-note/FlavorGroups';
+import { createTastingNoteComment } from '@/api/tasting-note';
+import { flattenRatingMapToTiles } from '@/lib/tasting-note';
 
 const makeBegIconMap = (items: BegFlavorItemDef[]) =>
-  new Map(items.map(i => [i.name, { iconSrc: i.iconSrc, iconActiveSrc: i.iconActiveSrc }]));
+  new Map(items.map(item => [item.name, { iconSrc: item.iconSrc, iconActiveSrc: item.iconActiveSrc }]));
 
 const makeExpertIconMap = (groups: { items: FlavorItemDef[] }[]) => {
-  const flat = groups.flatMap(g => g.items);
-  return new Map(flat.map(i => [i.name, { iconSrc: i.iconSrc, iconActiveSrc: i.iconActiveSrc }]));
+  const flat = groups.flatMap(group => group.items);
+  return new Map(flat.map(item => [item.name, { iconSrc: item.iconSrc, iconActiveSrc: item.iconActiveSrc }]));
 };
 
-const begIconMap = makeBegIconMap(FLAVOR_GROUPS_BEGINNER);
-const expertIconMap = makeExpertIconMap(FLAVOR_GROUPS_EXPERT);
+const iconMap = new Map([...makeBegIconMap(FLAVOR_GROUPS_BEGINNER), ...makeExpertIconMap(FLAVOR_GROUPS_EXPERT)]);
+
+function formatDate(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('ko-KR', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+function FlavorSection({
+  title,
+  items,
+}: {
+  title: string;
+  items: Array<{ label: string; score: number }>;
+}) {
+  return (
+    <section className="flex flex-col gap-4">
+      <h2 className="text-head5 text-black">{title}</h2>
+      {items.length > 0 ? (
+        <div className="flex flex-wrap gap-4">
+          {items.map(item => {
+            const icons = iconMap.get(item.label);
+            return (
+              <FlavorTile
+                key={`${title}-${item.label}`}
+                label={item.label}
+                score={item.score}
+                iconSrc={icons?.iconSrc}
+                iconActiveSrc={icons?.iconActiveSrc}
+                active
+                className="w-32"
+              />
+            );
+          })}
+        </div>
+      ) : (
+        <p className="text-body2 text-grey-700">선택된 향미 정보가 없습니다.</p>
+      )}
+    </section>
+  );
+}
 
 export default function TastingNoteDetailPage() {
-  const data = tastingNoteDetail[0];
-  const iconMap = data.noteType === 'beginner' ? begIconMap : expertIconMap;
-  return (
-    <div className="flex flex-col gap-10 mx-30 mb-30">
-      <BackButton>Tasting Note</BackButton>
-      <PostTitle
-        id={data.id}
-        boardType={toAlcoholLabel(data.alcoholcategory)}
-        title={data.title}
-        proileImage={data.profileImage}
-        authorNickname={data.authorNickname}
-        createdAt={data.createdAt}
-        views={data.views}
-      />
-      <div className="flex flex-col gap-9">
-        {/* Image Gallery */}
-        <ImageGallery images={data.content.images} />
+  const params = useParams<{ id: string }>();
+  const noteId = Number(params?.id);
+  const queryClient = useQueryClient();
+  const [comment, setComment] = useState('');
 
-        <dl className="flex flex-col gap-9 px-5">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-10 gap-y-6 ">
-            <div className="flex gap-7 items-center">
-              <dt className="w-30 text-head5 text-black">이름</dt>
-              <dd className="text-body1 text-black">{data.content.alchoolName}</dd>
-            </div>
+  const { data: currentUserId } = useQuery(authQueryOptions);
+  const { data, isLoading, isError } = useQuery(tastingNoteDetailQueryOptions(noteId));
 
-            <div className="flex gap-7 items-center">
-              <dt className="w-30 text-head5 text-black">시음 날짜</dt>
-              <dd className="text-body1 text-black">{data.content.tasteDate}</dd>
-            </div>
+  const aromaItems = useMemo(
+    () => (data ? flattenRatingMapToTiles(data.aromaNote) : []),
+    [data]
+  );
+  const palateItems = useMemo(
+    () => (data ? flattenRatingMapToTiles(data.palateNote) : []),
+    [data]
+  );
+  const finishItems = useMemo(
+    () => (data ? flattenRatingMapToTiles(data.finishNote) : []),
+    [data]
+  );
 
-            <div className="flex gap-7 items-center">
-              <dt className="w-30 text-head5 text-black">알코올 도수</dt>
-              <dd className="text-body1 text-black">{data.content.avb}도</dd>
-            </div>
+  const commentMutation = useMutation({
+    mutationFn: (content: string) =>
+      createTastingNoteComment(noteId, {
+        parentId: null,
+        content,
+        createdTime: new Date().toISOString(),
+      }),
+    onSuccess: async () => {
+      setComment('');
+      toast.success('댓글을 등록했어요.', { duration: 1200 });
+      await queryClient.invalidateQueries({
+        queryKey: ['tasting-note', 'detail', noteId],
+      });
+    },
+    onError: error => {
+      const message = error instanceof Error ? error.message : '댓글 등록에 실패했어요.';
+      toast.error(message, { duration: 1500 });
+    },
+  });
 
-            <div className="flex gap-7 items-center">
-              <dt className="w-30 text-head5 text-black">종류</dt>
-              <dd className="text-body1 text-black">{toAlcoholLabel(data.alcoholcategory)}</dd>
-            </div>
+  const handleSubmitComment = async () => {
+    const trimmed = comment.trim();
 
-            <div className="flex gap-7 items-center">
-              <dt className="w-30 text-head5 text-black">가격</dt>
-              <dd className="text-body1 text-black">
-                {data.content.price.toLocaleString('ko-KR')}
-              </dd>
-            </div>
+    if (!currentUserId) {
+      toast.info('로그인 후 댓글을 작성할 수 있어요.', { duration: 1200 });
+      return;
+    }
 
-            <div className="flex gap-7 items-center">
-              <dt className="w-30 text-head5 text-black">지역</dt>
-              <dd className="text-body1 text-black">{data.content.region}</dd>
-            </div>
+    if (!trimmed) {
+      toast.info('댓글 내용을 입력해주세요.', { duration: 1200 });
+      return;
+    }
 
-            <div className="flex gap-7 items-center">
-              <dt className="w-30 text-head5 text-black">별점</dt>
-              <dd className="text-body1 text-black">
-                <Rating rating={data.content.rate} size={40} />
-              </dd>
-            </div>
-          </div>
+    if (commentMutation.isPending) {
+      return;
+    }
 
-          {/* Appearance */}
-          <dt className="text-head5 text-black">Appearance(외관)</dt>
-          {data.noteType === 'beginner' ? (
-            <div className="w-full">
-              <AppearanceBar value={data.content.appearance} detailed={false} showLabel={false} />
-            </div>
-          ) : (
-            <div className="w-full">
-              <AppearanceBar value={data.content.appearance} detailed showLabel={false} />
-            </div>
-          )}
+    await commentMutation.mutateAsync(trimmed);
+  };
 
-          {/* Aroma, Palate, Finish */}
+  if (!Number.isFinite(noteId) || noteId <= 0) {
+    return <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-red-600">잘못된 노트 경로입니다.</div>;
+  }
 
-          {/* DEBUG: flavor names + iconMap hit 여부 */}
-          {/* <pre className="rounded-xl border bg-gray-50 p-4 text-xs text-gray-800">
-            {JSON.stringify(
-              {
-                noteType: data.noteType,
-                aroma: data.content.aroma.map((f: any) => ({
-                  name: f.name,
-                  value: f.value,
-                  iconHit: !!iconMap.get(f.name),
-                })),
-                palate: data.content.palate.map((f: any) => ({
-                  name: f.name,
-                  value: f.value,
-                  iconHit: !!iconMap.get(f.name),
-                })),
-                finish: data.content.finish.map((f: any) => ({
-                  name: f.name,
-                  value: f.value,
-                  iconHit: !!iconMap.get(f.name),
-                })),
-              },
-              null,
-              2
-            )}
-          </pre> */}
-          <div className="flex flex-col gap-3">
-            <dt className="text-head5 text-black">Aroma(향)</dt>
-            <dd className="flex flex-wrap gap-4">
-              {data.content.aroma.map((f: { name: string; value: number }) => {
-                const icons = iconMap.get(f.name);
+  if (isLoading) {
+    return <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-grey-700">불러오는 중...</div>;
+  }
 
-                return (
-                  <FlavorTile
-                    key={f.name}
-                    label={f.name}
-                    score={f.value}
-                    iconSrc={icons?.iconSrc}
-                    iconActiveSrc={icons?.iconActiveSrc}
-                    active
-                    className="w-32"
-                  />
-                );
-              })}
-            </dd>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <dt className="text-head5 text-black">Palate(맛)</dt>
-            <dd className="flex flex-wrap gap-4">
-              {data.content.palate.map((f: { name: string; value: number }) => {
-                const icons = iconMap.get(f.name);
-                return (
-                  <FlavorTile
-                    key={f.name}
-                    label={f.name}
-                    score={f.value}
-                    iconSrc={icons?.iconSrc}
-                    iconActiveSrc={icons?.iconActiveSrc}
-                    active
-                    className="w-32"
-                  />
-                );
-              })}
-            </dd>
-          </div>
-
-          <div className="flex flex-col gap-3">
-            <dt className="text-head5 text-black">Finish(피니시)</dt>
-            <dd className="flex flex-wrap gap-4">
-              {data.content.finish.map((f: { name: string; value: number }) => {
-                const icons = iconMap.get(f.name);
-                return (
-                  <FlavorTile
-                    key={f.name}
-                    label={f.name}
-                    score={f.value}
-                    iconSrc={icons?.iconSrc}
-                    iconActiveSrc={icons?.iconActiveSrc}
-                    active
-                    className="w-32"
-                  />
-                );
-              })}
-            </dd>
-          </div>
-          {/* Comment */}
-          <div>
-            <dt className="text-head5 text-black">Comment</dt>
-            <dd className="text-body1 text-black whitespace-pre-wrap">{data.content.comment}</dd>
-          </div>
-        </dl>
-
-        <CommentSection postId={data.id} />
+  if (isError || !data) {
+    return (
+      <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-grey-700">
+        테이스팅 노트를 불러오지 못했습니다.
       </div>
-    </div>
+    );
+  }
+
+  return (
+    <main className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-8 md:px-8">
+      <BackButton>Tasting Note</BackButton>
+
+      <section className="rounded-2xl border border-grey-300 bg-white px-6 py-7 shadow-sm">
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-wrap items-center gap-3 text-body3 text-grey-700">
+            <span className="rounded-full bg-yellow-100 px-3 py-1 font-medium text-brown">
+              Tasting Note
+            </span>
+            <span>작성자 {data.writerName}</span>
+            <span>작성일 {formatDate(data.createdAt)}</span>
+          </div>
+
+          <h1 className="text-head3 text-black">{data.title}</h1>
+
+          <div className="flex flex-wrap gap-4 text-body2 text-grey-800">
+            <span>좋아요 {data.likeCount}</span>
+            <span>비추천 {data.unlikeCount}</span>
+            <span>조회수 {data.viewCount}</span>
+            <span>댓글 {data.comments.length}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-grey-300 bg-white p-6 shadow-sm">
+        {data.images.length > 0 ? (
+          <ImageGallery images={data.images} />
+        ) : (
+          <div className="rounded-xl bg-grey-100 px-4 py-10 text-center text-body2 text-grey-700">
+            등록된 이미지가 없습니다.
+          </div>
+        )}
+      </section>
+
+      <div className="flex flex-col gap-8 rounded-2xl border border-grey-300 bg-white p-6 shadow-sm">
+        <FlavorSection title="Aroma" items={aromaItems} />
+        <FlavorSection title="Palate" items={palateItems} />
+        <FlavorSection title="Finish" items={finishItems} />
+      </div>
+
+      <section className="rounded-2xl border border-grey-300 bg-white p-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-head5 text-black">Comments</h2>
+          <span className="text-body3 text-grey-700">{data.comments.length}개</span>
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <textarea
+            value={comment}
+            onChange={event => setComment(event.target.value)}
+            rows={4}
+            placeholder="댓글을 남겨보세요."
+            className="w-full resize-y rounded-xl border border-grey-300 bg-white px-4 py-3 text-body2 outline-none focus:border-brown"
+          />
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void handleSubmitComment()}
+              disabled={commentMutation.isPending}
+              className="rounded-xl bg-yellow-main px-5 py-2 text-button text-brown disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {commentMutation.isPending ? '등록 중...' : '댓글 등록'}
+            </button>
+          </div>
+        </div>
+
+        <div className="mt-6 flex flex-col divide-y divide-grey-300">
+          {data.comments.length > 0 ? (
+            data.comments.map(item => (
+              <article key={item.id} className="py-4 first:pt-0 last:pb-0">
+                <div className="flex flex-wrap items-center gap-3 text-body3 text-grey-700">
+                  <span className="font-semibold text-black">{item.writerNickname}</span>
+                  <span>{formatDate(item.createdAt)}</span>
+                  <span>좋아요 {item.likeCount}</span>
+                  <span>비추천 {item.unlikeCount}</span>
+                  {item.parentId !== null && <span>답글</span>}
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-body2 text-black">{item.content}</p>
+              </article>
+            ))
+          ) : (
+            <p className="py-4 text-body2 text-grey-700">아직 댓글이 없습니다.</p>
+          )}
+        </div>
+      </section>
+    </main>
   );
 }

@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useRouter } from 'next/navigation';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft } from 'lucide-react';
@@ -15,16 +18,19 @@ import FlavorGroupCard from '@/components/tasting-note/FlavorGroupCard';
 import { FLAVOR_GROUPS_EXPERT } from '@/components/tasting-note/FlavorGroups';
 import IntensityPopover from '@/components/tasting-note/IntensityPopover';
 import FlavorItem from '@/components/tasting-note/FlavorItem';
-
 import { Search } from 'lucide-react';
 
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
+import AuthGuard from '@/components/auth/AuthGuard';
+import { alcoholListQueryOptions } from '@/query/options/alcohol';
+import { createTastingNote } from '@/api/tasting-note';
+import { filesToDataUrls, toTastingNotePayload } from '@/lib/tasting-note';
 
 type WhiskyMeta = {
   name: string;
@@ -36,12 +42,22 @@ type WhiskyMeta = {
 };
 
 export default function TastingNoteWritePage() {
+  return (
+    <AuthGuard>
+      <TastingNoteWritePageContent />
+    </AuthGuard>
+  );
+}
+
+function TastingNoteWritePageContent() {
+  const router = useRouter();
   const [catOpen, setCatOpen] = useState(false); // ▼/▲ 토글용
   const [images, setImages] = useState<File[]>([]);
   const [mode, setMode] = useState<'beginner' | 'expert'>('beginner');
   const [keyword, setKeyword] = useState('');
   const [title, setTitle] = useState('');
   const [boardCategory, setBoardCategory] = useState('');
+  const [selectedAlcoholId, setSelectedAlcoholId] = useState<number | null>(null);
   const [whisky, setWhisky] = useState<WhiskyMeta>({
     name: '',
     abv: '',
@@ -60,18 +76,82 @@ export default function TastingNoteWritePage() {
     Finish: {},
   });
 
-  const handleSubmit = () => {
-    console.log('tasting-note submit', {
-      mode,
-      keyword,
-      title,
-      whisky,
-      rating,
-      appearance,
-      comment,
-      flavors,
-    });
-    alert('임시 저장: 콘솔에서 제출 페이로드 확인 가능');
+  const alcoholSearchQuery = useMemo(
+    () =>
+      alcoholListQueryOptions({
+        page: 1,
+        size: 5,
+        query: keyword.trim(),
+        category: boardCategory,
+      }),
+    [boardCategory, keyword]
+  );
+
+  const { data: alcoholSearchResult, isFetching: isAlcoholSearching } = useQuery({
+    ...alcoholSearchQuery,
+    enabled: keyword.trim().length > 0,
+  });
+
+  const createNoteMutation = useMutation({
+    mutationFn: async () => {
+      if (!selectedAlcoholId) {
+        throw new Error('등록할 술을 검색 결과에서 선택해주세요.');
+      }
+
+      const imagePayload = await filesToDataUrls(images);
+
+      return createTastingNote({
+        title: title.trim(),
+        alcoholId: selectedAlcoholId,
+        createdTime: whisky.date.trim() || new Date().toISOString(),
+        ...toTastingNotePayload(flavors),
+        images: imagePayload,
+      });
+    },
+    onSuccess: result => {
+      toast.success('테이스팅 노트를 등록했어요.', { duration: 1200 });
+      router.push(`/tasting-note/${result.id}`);
+    },
+    onError: error => {
+      const message = error instanceof Error ? error.message : '등록 중 문제가 발생했어요.';
+      toast.error(message, { duration: 1500 });
+    },
+  });
+
+  const searchItems = alcoholSearchResult?.items ?? [];
+
+  const handleSelectAlcohol = (id: number, name: string) => {
+    setSelectedAlcoholId(id);
+    setKeyword(name);
+    setWhisky(prev => ({ ...prev, name }));
+  };
+
+  const handleSubmit = async () => {
+    if (!boardCategory) {
+      toast.info('게시판 주제를 선택해주세요.', { duration: 1200 });
+      return;
+    }
+
+    if (!title.trim()) {
+      toast.info('제목을 입력해주세요.', { duration: 1200 });
+      return;
+    }
+
+    if (!selectedAlcoholId) {
+      toast.info('술 이름 검색 결과에서 대상을 선택해주세요.', { duration: 1200 });
+      return;
+    }
+
+    if (
+      Object.keys(flavors.Aroma).length === 0 &&
+      Object.keys(flavors.Palate).length === 0 &&
+      Object.keys(flavors.Finish).length === 0
+    ) {
+      toast.info('최소 한 개 이상의 향미를 선택해주세요.', { duration: 1200 });
+      return;
+    }
+
+    await createNoteMutation.mutateAsync();
   };
 
   return (
@@ -96,7 +176,10 @@ export default function TastingNoteWritePage() {
               <div className="col-span-12">
                 <Select
                   value={boardCategory || undefined}
-                  onValueChange={v => setBoardCategory(v)}
+                  onValueChange={v => {
+                    setBoardCategory(v);
+                    setSelectedAlcoholId(null);
+                  }}
                   onOpenChange={setCatOpen}
                 >
                   <SelectTrigger
@@ -126,13 +209,43 @@ export default function TastingNoteWritePage() {
                 </label>
                 <div className="relative">
                   <Input
-                    placeholder="술 이름을 검색해주세요 (아직 미구현)"
+                    placeholder="술 이름을 검색해주세요"
                     value={keyword}
-                    onChange={e => setKeyword(e.target.value)}
+                    onChange={e => {
+                      setKeyword(e.target.value);
+                      setSelectedAlcoholId(null);
+                    }}
                     className="w-full bg-white border-brown-200 focus:border-brown-400 pr-10"
                   />
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brown-700" />
                 </div>
+                {keyword.trim().length > 0 && (
+                  <div className="mt-2 rounded-lg border border-brown-100 bg-white p-2 shadow-sm">
+                    {isAlcoholSearching ? (
+                      <p className="px-2 py-1 text-sm text-brown-700">검색 중...</p>
+                    ) : searchItems.length > 0 ? (
+                      <div className="flex flex-col">
+                        {searchItems.map(item => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => handleSelectAlcohol(item.id, item.name)}
+                            className={`rounded-md px-3 py-2 text-left text-sm transition hover:bg-yellow-100 ${
+                              selectedAlcoholId === item.id ? 'bg-yellow-100 text-brown-900' : 'text-brown-800'
+                            }`}
+                          >
+                            {item.name}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="px-2 py-1 text-sm text-brown-700">검색 결과가 없습니다.</p>
+                    )}
+                  </div>
+                )}
+                <p className="mt-2 text-xs text-brown-700">
+                  현재 API에는 제목, 선택한 술, 시음 시각, 향미 정보, 이미지가 저장됩니다.
+                </p>
               </div>
 
               {/* 제목: 전체폭 */}
@@ -216,9 +329,10 @@ export default function TastingNoteWritePage() {
           <div className="flex justify-end mt-6">
             <Button
               onClick={handleSubmit}
+              disabled={createNoteMutation.isPending}
               className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 py-2 rounded-lg font-medium"
             >
-              등록하기
+              {createNoteMutation.isPending ? '등록 중...' : '등록하기'}
             </Button>
           </div>
         </div>
