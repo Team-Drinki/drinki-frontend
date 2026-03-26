@@ -136,17 +136,17 @@ function MyPageContent() {
     {
       id: 1,
       postTitle: '입문자를 위한 위스키 추천 5선',
-      comment: 'ㄴ 저는 글렌리벳 12년도 정말 추천해요.',
+      comment: ' 저는 글렌리벳 12년도 정말 추천해요.',
     },
     {
       id: 2,
       postTitle: '요즘 빠진 조합: 아벨라워 + 다크초콜릿',
-      comment: 'ㄴ 이 조합 진짜 공감입니다. 피트향에도 잘 어울려요.',
+      comment: ' 이 조합 진짜 공감입니다. 피트향에도 잘 어울려요.',
     },
     {
       id: 3,
       postTitle: '테이스팅노트 어떻게 쓰고 계신가요?',
-      comment: 'ㄴ 향/맛/피니시를 나눠서 쓰니 훨씬 정리되더라고요.',
+      comment: ' 향/맛/피니시를 나눠서 쓰니 훨씬 정리되더라고요.',
     },
   ];
 
@@ -219,7 +219,7 @@ function DashboardSection({
   children: ReactNode;
 }) {
   return (
-    <Card className="rounded-2xl border-none shadow-sm overflow-hidden">
+    <Card className="overflow-hidden rounded-2xl border-none py-0 shadow-sm">
       <div className="flex items-center justify-between bg-yellow-main px-4 py-3 md:px-5">
         <h2 className="text-[1.55rem] font-semibold leading-[1.2] text-black md:text-head6">{title}</h2>
         <Link
@@ -229,7 +229,7 @@ function DashboardSection({
           more <ChevronRight className="size-4" />
         </Link>
       </div>
-      <CardContent className="p-3.5 md:p-5">{children}</CardContent>
+      <CardContent className="px-3.5 pb-3.5 pt-0 md:px-5 md:pb-5 md:pt-0">{children}</CardContent>
     </Card>
   );
 }
@@ -268,11 +268,18 @@ function ActivityGrid({ items }: { items: ActivityItem[] }) {
 
 function CommentList({ items }: { items: CommentItem[] }) {
   return (
-    <ul className="space-y-4">
-      {items.map(item => (
-        <li key={item.id} className="rounded-lg border border-grey-200 bg-white px-4 py-3">
-          <p className="text-body3 font-semibold text-black">{item.postTitle}</p>
-          <p className="mt-1 text-body3 text-grey-700">{item.comment}</p>
+    <ul>
+      {items.map((item, index) => (
+        <li
+          key={item.id}
+          className={index === 0 ? 'px-4 py-5 md:px-5' : 'border-t border-brown/40 px-4 py-5 md:px-5'}
+        >
+          <p className="text-body2 font-semibold leading-[1.35] text-black md:text-head6">
+            {item.postTitle}
+          </p>
+          <p className="mt-3 whitespace-pre-line text-body3 leading-[1.6] text-grey-800">
+            └ {item.comment}
+          </p>
         </li>
       ))}
     </ul>

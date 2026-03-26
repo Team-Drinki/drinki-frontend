@@ -51,8 +51,8 @@ function TastingNotePageContent() {
 
   return (
     <main className="flex-1 pb-20">
-      <section className="bg-yellow-100">
-        <div className="mx-auto max-w-[1200px] px-5 py-10 sm:px-8 sm:py-12 md:px-10 md:py-14">
+      <section className="px-5 pt-6 sm:px-8 sm:pt-8 md:px-10 md:pt-10">
+        <div className="mx-auto max-w-[1200px] rounded-[24px] bg-yellow-100 px-5 py-10 sm:px-8 sm:py-12 md:px-10 md:py-14">
           <h1 className="text-[clamp(2.25rem,9vw,3rem)] font-bold text-black">Tasting Note</h1>
           <p className="mt-3 text-body2 text-grey-800 sm:text-body1">
             향과 맛을 잊기 전에 테이스팅 노트를 작성해보세요.
