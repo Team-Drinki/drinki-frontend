@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { Button } from '../../ui/button';
 import { drinkCategories } from './const';
 import { cn } from '@/lib/utils';
@@ -12,6 +13,7 @@ import MypageIcon from '../../svg/MypageIcon';
 export function Navibar() {
   const [isDropdownOpen, setDropdownOpen] = useState(false);
   const isMobile = useIsMobile();
+  const pathname = usePathname();
   const dropdownRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -28,6 +30,10 @@ export function Navibar() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isDropdownOpen]);
+
+  const isDrinkActive = pathname.startsWith('/alcohol');
+  const isTastingNoteActive = pathname.startsWith('/tasting-note');
+  const isCommunityActive = pathname.startsWith('/community');
 
   return (
     <nav className="sticky top-0 z-50 h-20 w-full bg-white md:h-32">
@@ -48,26 +54,46 @@ export function Navibar() {
               <Button
                 variant="outline"
                 className={cn(
-                  isMobile && isDropdownOpen && 'bg-yellow-500',
-                  'h-auto w-full rounded-md border-0 p-0 text-[13px] leading-none font-semibold shadow-none hover:bg-yellow-500 md:text-[1.25rem]'
+                  'h-auto w-full rounded-md border-0 p-0 text-[13px] leading-none font-semibold text-brown-800 shadow-none hover:bg-transparent md:text-[1.25rem]'
                 )}
                 onClick={() => setDropdownOpen(prev => !prev)}
               >
-                Drink
+                <span
+                  className={cn(
+                    'inline-flex rounded-md px-2 py-1 hover:bg-yellow-500',
+                    isDrinkActive && 'text-orange-500'
+                  )}
+                >
+                  Drink
+                </span>
               </Button>
               <DrinkDropdownContent isOpen={isDropdownOpen} categories={drinkCategories} />
             </div>
             <Link
               href="/tasting-note"
-              className="flex-1 rounded-md py-0.5 text-center text-[13px] leading-none font-semibold hover:bg-yellow-500 md:text-[1.25rem]"
+              className="flex-1 py-0.5 text-center text-[13px] leading-none font-semibold text-brown-800 md:text-[1.25rem]"
             >
-              Tasting Note
+              <span
+                className={cn(
+                  'inline-flex rounded-md px-2 py-1 hover:bg-yellow-500',
+                  isTastingNoteActive && 'text-orange-500'
+                )}
+              >
+                Tasting Note
+              </span>
             </Link>
             <Link
               href="/community"
-              className="flex-1 rounded-md py-0.5 text-center text-[13px] leading-none font-semibold hover:bg-yellow-500 md:text-[1.25rem]"
+              className="flex-1 py-0.5 text-center text-[13px] leading-none font-semibold text-brown-800 md:text-[1.25rem]"
             >
-              Community
+              <span
+                className={cn(
+                  'inline-flex rounded-md px-2 py-1 hover:bg-yellow-500',
+                  isCommunityActive && 'text-orange-500'
+                )}
+              >
+                Community
+              </span>
             </Link>
           </div>
         </div>
