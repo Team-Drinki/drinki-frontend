@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useMemo, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import BackButton from '@/components/common/BackButton';
@@ -15,8 +16,9 @@ import {
   type BegFlavorItemDef,
   type FlavorItemDef,
 } from '@/components/tasting-note/FlavorGroups';
-import { createTastingNoteComment } from '@/api/tasting-note';
+import { createTastingNoteComment, deleteTastingNote } from '@/api/tasting-note';
 import { flattenRatingMapToTiles } from '@/lib/tasting-note';
+import { Button } from '@/components/ui/button';
 
 const makeBegIconMap = (items: BegFlavorItemDef[]) =>
   new Map(items.map(item => [item.name, { iconSrc: item.iconSrc, iconActiveSrc: item.iconActiveSrc }]));
@@ -79,12 +81,14 @@ function FlavorSection({
 
 export default function TastingNoteDetailPage() {
   const params = useParams<{ id: string }>();
+  const router = useRouter();
   const noteId = Number(params?.id);
   const queryClient = useQueryClient();
   const [comment, setComment] = useState('');
 
   const { data: currentUserId } = useQuery(authQueryOptions);
   const { data, isLoading, isError } = useQuery(tastingNoteDetailQueryOptions(noteId));
+  const isOwner = currentUserId === data?.writerId;
 
   const aromaItems = useMemo(
     () => (data ? flattenRatingMapToTiles(data.aromaNote) : []),
@@ -119,6 +123,19 @@ export default function TastingNoteDetailPage() {
     },
   });
 
+  const deleteMutation = useMutation({
+    mutationFn: () => deleteTastingNote(noteId),
+    onSuccess: async () => {
+      toast.success('테이스팅 노트를 삭제했어요.', { duration: 1200 });
+      await queryClient.invalidateQueries({ queryKey: ['tasting-note'] });
+      router.replace('/tasting-note');
+    },
+    onError: error => {
+      const message = error instanceof Error ? error.message : '삭제에 실패했어요.';
+      toast.error(message, { duration: 1500 });
+    },
+  });
+
   const handleSubmitComment = async () => {
     const trimmed = comment.trim();
 
@@ -137,6 +154,19 @@ export default function TastingNoteDetailPage() {
     }
 
     await commentMutation.mutateAsync(trimmed);
+  };
+
+  const handleDelete = async () => {
+    if (!isOwner || deleteMutation.isPending) {
+      return;
+    }
+
+    const confirmed = window.confirm('이 테이스팅 노트를 삭제할까요?');
+    if (!confirmed) {
+      return;
+    }
+
+    await deleteMutation.mutateAsync();
   };
 
   if (!Number.isFinite(noteId) || noteId <= 0) {
@@ -161,12 +191,31 @@ export default function TastingNoteDetailPage() {
 
       <section className="rounded-2xl border border-grey-300 bg-white px-6 py-7 shadow-sm">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-wrap items-center gap-3 text-body3 text-grey-700">
-            <span className="rounded-full bg-yellow-100 px-3 py-1 font-medium text-brown">
-              Tasting Note
-            </span>
-            <span>작성자 {data.writerName}</span>
-            <span>작성일 {formatDate(data.createdAt)}</span>
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-3 text-body3 text-grey-700">
+              <span className="rounded-full bg-yellow-100 px-3 py-1 font-medium text-brown">
+                Tasting Note
+              </span>
+              <span>작성자 {data.writerName}</span>
+              <span>작성일 {formatDate(data.createdAt)}</span>
+            </div>
+
+            {isOwner && (
+              <div className="flex gap-2">
+                <Button asChild type="button" variant="outline" className="h-9 px-4">
+                  <Link href={`/tasting-note/edit?noteId=${data.id}`}>수정</Link>
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 px-4 text-red-600 hover:text-red-600"
+                  disabled={deleteMutation.isPending}
+                  onClick={() => void handleDelete()}
+                >
+                  {deleteMutation.isPending ? '삭제 중...' : '삭제'}
+                </Button>
+              </div>
+            )}
           </div>
 
           <h1 className="text-head3 text-black">{data.title}</h1>

@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const alcoholRelationSchema = z
   .object({
-    id: z.number(),
+    id: z.coerce.number(),
     name: z.string(),
   })
   .nullable();
@@ -52,22 +52,60 @@ export const pageUtilSchema = z.object({
   hasPrevious: z.boolean(),
 });
 
-export const alcoholListItemSchema = z.object({
+const alcoholListItemRawSchema = z.object({
   id: numberFromUnknown,
   name: z.string(),
-  image: z.string().nullable(),
-  category: z.string(),
-  wish: numberFromUnknown,
+  imageUrl: z.string().nullable(),
+  price: numberFromUnknown,
+  proof: numberFromUnknown,
   rating: numberFromUnknown,
+  wishCnt: numberFromUnknown,
   viewCnt: numberFromUnknown,
   noteCnt: numberFromUnknown,
-  isWish: z.boolean(),
+  category: alcoholRelationSchema.optional(),
+  location: alcoholRelationSchema.optional(),
+  style: alcoholRelationSchema.optional(),
 });
 
-export const alcoholListResponseSchema = z.object({
-  items: z.array(alcoholListItemSchema),
-  pageUtil: pageUtilSchema,
+export const alcoholListItemSchema = alcoholListItemRawSchema.transform(data => ({
+  id: data.id,
+  name: data.name,
+  image: data.imageUrl,
+  price: data.price,
+  proof: data.proof,
+  category: data.category?.name ?? '',
+  location: data.location?.name ?? '',
+  style: data.style?.name ?? '',
+  wish: data.wishCnt,
+  rating: data.rating,
+  viewCnt: data.viewCnt,
+  noteCnt: data.noteCnt,
+  isWish: false,
+}));
+
+const alcoholSearchPaginationSchema = z.object({
+  page: numberFromUnknown,
+  size: numberFromUnknown,
+  total: numberFromUnknown,
+  totalPages: numberFromUnknown,
 });
+
+export const alcoholListResponseSchema = z
+  .object({
+    data: z.array(alcoholListItemRawSchema),
+    pagination: alcoholSearchPaginationSchema,
+  })
+  .transform(data => ({
+    items: data.data.map(item => alcoholListItemSchema.parse(item)),
+    pageUtil: {
+      currentPage: data.pagination.page,
+      totalPages: data.pagination.totalPages,
+      totalCount: data.pagination.total,
+      pageSize: data.pagination.size,
+      hasNext: data.pagination.page < data.pagination.totalPages,
+      hasPrevious: data.pagination.page > 1,
+    },
+  }));
 
 export type AlcoholListItem = z.infer<typeof alcoholListItemSchema>;
 export type AlcoholListResponse = z.infer<typeof alcoholListResponseSchema>;

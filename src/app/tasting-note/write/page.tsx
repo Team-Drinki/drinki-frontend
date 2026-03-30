@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import AuthGuard from '@/components/auth/AuthGuard';
+import { getAlcoholList } from '@/api/alcohol';
 import { alcoholListQueryOptions } from '@/query/options/alcohol';
 import { createTastingNote } from '@/api/tasting-note';
 import { filesToDataUrls, toTastingNotePayload } from '@/lib/tasting-note';
@@ -93,16 +94,12 @@ function TastingNoteWritePageContent() {
   });
 
   const createNoteMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedAlcoholId) {
-        throw new Error('등록할 술을 검색 결과에서 선택해주세요.');
-      }
-
+    mutationFn: async (alcoholId: number) => {
       const imagePayload = await filesToDataUrls(images);
 
       return createTastingNote({
         title: title.trim(),
-        alcoholId: selectedAlcoholId,
+        alcoholId,
         createdTime: whisky.date.trim() || new Date().toISOString(),
         ...toTastingNotePayload(flavors),
         images: imagePayload,
@@ -120,10 +117,88 @@ function TastingNoteWritePageContent() {
 
   const searchItems = alcoholSearchResult?.items ?? [];
 
-  const handleSelectAlcohol = (id: number, name: string) => {
-    setSelectedAlcoholId(id);
-    setKeyword(name);
-    setWhisky(prev => ({ ...prev, name }));
+  const handleSelectAlcohol = (
+    item: {
+      id: number;
+      name: string;
+      proof: number;
+      style: string;
+      price: number;
+      location: string;
+    }
+  ) => {
+    setSelectedAlcoholId(item.id);
+    setKeyword(item.name);
+    setWhisky(prev => ({
+      ...prev,
+      name: item.name,
+      abv: item.proof ? String(item.proof) : '',
+      type: item.style ?? '',
+      price: item.price ? String(item.price) : '',
+      region: item.location ?? '',
+    }));
+  };
+
+  const resolveAlcoholId = async (): Promise<number> => {
+    if (selectedAlcoholId) {
+      return selectedAlcoholId;
+    }
+
+    const inputName = whisky.name.trim() || keyword.trim();
+    if (!inputName) {
+      throw new Error('술 이름을 검색하거나 직접 입력해주세요.');
+    }
+
+    const result = await getAlcoholList({
+      page: 1,
+      size: 20,
+      query: inputName,
+      category: boardCategory,
+    });
+
+    const normalizedInput = inputName.replace(/\s+/g, '').toLowerCase();
+    const exactMatch = result.items.find(
+      item => item.name.replace(/\s+/g, '').toLowerCase() === normalizedInput
+    );
+
+    if (exactMatch) {
+      setSelectedAlcoholId(exactMatch.id);
+      setKeyword(exactMatch.name);
+      setWhisky(prev => ({
+        ...prev,
+        name: exactMatch.name,
+        abv: exactMatch.proof ? String(exactMatch.proof) : '',
+        type: exactMatch.style ?? '',
+        price: exactMatch.price ? String(exactMatch.price) : '',
+        region: exactMatch.location ?? '',
+      }));
+      return exactMatch.id;
+    }
+
+    if (result.items.length === 1) {
+      const [onlyItem] = result.items;
+      if (!onlyItem) {
+        throw new Error('등록된 술 정보를 찾지 못했어요.');
+      }
+
+      setSelectedAlcoholId(onlyItem.id);
+      setKeyword(onlyItem.name);
+      setWhisky(prev => ({
+        ...prev,
+        name: onlyItem.name,
+        abv: onlyItem.proof ? String(onlyItem.proof) : '',
+        type: onlyItem.style ?? '',
+        price: onlyItem.price ? String(onlyItem.price) : '',
+        region: onlyItem.location ?? '',
+      }));
+      return onlyItem.id;
+    }
+
+    if (result.items.length === 0) {
+      throw new Error('입력한 술 이름과 일치하는 등록 데이터를 찾지 못했어요.');
+    }
+
+    throw new Error('같은 이름의 검색 결과가 여러 개 있어요. 검색 결과에서 정확한 술을 선택해주세요.');
   };
 
   const handleSubmit = async () => {
@@ -137,11 +212,6 @@ function TastingNoteWritePageContent() {
       return;
     }
 
-    if (!selectedAlcoholId) {
-      toast.info('술 이름 검색 결과에서 대상을 선택해주세요.', { duration: 1200 });
-      return;
-    }
-
     if (
       Object.keys(flavors.Aroma).length === 0 &&
       Object.keys(flavors.Palate).length === 0 &&
@@ -151,7 +221,13 @@ function TastingNoteWritePageContent() {
       return;
     }
 
-    await createNoteMutation.mutateAsync();
+    try {
+      const resolvedAlcoholId = await resolveAlcoholId();
+      await createNoteMutation.mutateAsync(resolvedAlcoholId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '술 정보를 확인하지 못했어요.';
+      toast.info(message, { duration: 1500 });
+    }
   };
 
   return (
@@ -214,6 +290,7 @@ function TastingNoteWritePageContent() {
                     onChange={e => {
                       setKeyword(e.target.value);
                       setSelectedAlcoholId(null);
+                      setWhisky(prev => ({ ...prev, name: e.target.value }));
                     }}
                     className="w-full bg-white border-brown-200 focus:border-brown-400 pr-10"
                   />
@@ -229,7 +306,7 @@ function TastingNoteWritePageContent() {
                           <button
                             key={item.id}
                             type="button"
-                            onClick={() => handleSelectAlcohol(item.id, item.name)}
+                            onClick={() => handleSelectAlcohol(item)}
                             className={`rounded-md px-3 py-2 text-left text-sm transition hover:bg-yellow-100 ${
                               selectedAlcoholId === item.id ? 'bg-yellow-100 text-brown-900' : 'text-brown-800'
                             }`}
@@ -244,7 +321,7 @@ function TastingNoteWritePageContent() {
                   </div>
                 )}
                 <p className="mt-2 text-xs text-brown-700">
-                  현재 API에는 제목, 선택한 술, 시음 시각, 향미 정보, 이미지가 저장됩니다.
+                  beta 버전에서는 검색하거나 직접 입력할 수 있어요. 저장 시 등록된 술 이름과 자동 매칭을 시도합니다.
                 </p>
               </div>
 

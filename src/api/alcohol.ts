@@ -34,6 +34,26 @@ export interface AlcoholListParams {
   rating?: number;
 }
 
+function mapSortToBackend(sort: AlcoholListParams['sort']): string {
+  switch (sort) {
+    case 'View':
+      return 'viewCnt:desc';
+    case 'Like':
+      return 'wishCnt:desc';
+    case 'Rating':
+      return 'rating:desc';
+    case 'PriceAsc':
+      return 'price:asc';
+    case 'PriceDesc':
+      return 'price:desc';
+    case 'TastingNote':
+      return 'createdAt:desc';
+    case 'CreatedAt':
+    default:
+      return 'createdAt:desc';
+  }
+}
+
 const defaultAlcoholListParams: Required<AlcoholListParams> = {
   page: 1,
   size: 9,
@@ -52,11 +72,8 @@ export async function getAlcoholList(params: AlcoholListParams = {}): Promise<Al
   return fetchAlcoholList('alcohols/search', {
     page: merged.page,
     size: merged.size,
-    sort: merged.sort,
+    sort: mapSortToBackend(merged.sort),
     query: merged.query,
-    category: merged.category,
-    location: merged.location,
-    style: merged.style,
     priceMin: merged.priceMin,
     priceMax: merged.priceMax,
     rating: merged.rating,
