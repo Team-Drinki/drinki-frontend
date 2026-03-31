@@ -13,10 +13,10 @@ export default function AppWrapper({ children }: { children: ReactNode }) {
   const showFooter = !hideFooterRoutes.includes(pathname);
 
   return (
-    <>
+    <div className="flex min-h-screen flex-col">
       <Navibar />
-      {children}
+      <div className="flex flex-1 flex-col">{children}</div>
       {showFooter && <Footer />}
-    </>
+    </div>
   );
 }

@@ -1,5 +1,4 @@
 import React, { useRef } from 'react';
-import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Search from '../svg/Search';
 
@@ -29,7 +28,7 @@ export default function Searchbar({
   return (
     <div
       className={cn(
-        'rounded-[100px] relative h-fit w-fit shadow-[0_0_7px_rgba(0,0,0,0.1)] bg-transparent',
+        'relative h-fit w-full rounded-[100px] bg-transparent shadow-[0_0_7px_rgba(0,0,0,0.1)]',
         className
       )}
     >
@@ -38,9 +37,9 @@ export default function Searchbar({
         type="text"
         placeholder={placeholder}
         onKeyDown={handleKeyPress}
-        className="outline-brown max-lg:w-full outline-2 rounded-full w-[726px] px-10 py-4 text-head5 bg-transparent text-black placeholder:text-grey-700 focus:text-grey-900 placeholder:focus:text-gray-900"
+        className="outline-brown w-full rounded-full bg-transparent px-5 py-3 pr-14 text-[1.125rem] font-semibold text-black outline-2 placeholder:text-grey-700 focus:text-grey-900 sm:px-8 sm:py-4 sm:pr-18 sm:text-head5 placeholder:focus:text-gray-900"
       />
-      <Search className="absolute size-8 text-brown right-[40px] top-1/2 transform -translate-y-1/2" />
+      <Search className="absolute right-5 top-1/2 size-6 -translate-y-1/2 transform text-brown sm:right-8 sm:size-8" />
     </div>
   );
 }

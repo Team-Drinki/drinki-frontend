@@ -14,15 +14,17 @@ export function HotCommunityPostCard({ index, title, href }: HotCommunityPostCar
     <Link href={href} className="block w-full">
       <div
         className={cn(
-          'cursor-pointer flex items-center py-2 gap-2 w-full rounded-[0.5rem] text-brown bg-white',
+          'cursor-pointer flex w-full items-center gap-2 rounded-[0.5rem] bg-white py-1.5 text-brown md:py-2',
           isFirst && 'bg-yellow-main'
         )}
       >
-        <span className="text-head4 shrink-0 px-4">{index + 1}</span>
+        <span className="shrink-0 px-3 text-[1.35rem] leading-none font-bold md:px-4 md:text-head4">
+          {index + 1}
+        </span>
         <p
           className={cn(
-            'text-body1 truncate whitespace-nowrap overflow-hidden min-w-0',
-            isFirst && 'text-head6'
+            'min-w-0 truncate whitespace-nowrap overflow-hidden text-[0.92rem] leading-6 md:text-body1',
+            isFirst && 'font-semibold md:text-head6'
           )}
         >
           {title}

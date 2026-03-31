@@ -66,7 +66,7 @@ const PaginationPrevious = ({
     {...props}
   >
     <ChevronLeft className="h-4 w-4" />
-    <span>이전</span>
+    <span className="hidden sm:inline">이전</span>
   </PaginationLink>
 );
 PaginationPrevious.displayName = 'PaginationPrevious';
@@ -78,7 +78,7 @@ const PaginationNext = ({ className, ...props }: React.ComponentProps<typeof Pag
     className={cn('gap-1 pr-2.5', className)}
     {...props}
   >
-    <span>다음</span>
+    <span className="hidden sm:inline">다음</span>
     <ChevronRight className="h-4 w-4" />
   </PaginationLink>
 );
@@ -108,9 +108,13 @@ export default function PostsPagination({
   onPageChange,
 }: PostsPaginationProps) {
   const getVisiblePages = () => {
+    if (totalPages <= 1) {
+      return [1];
+    }
+
     const delta = 2;
-    const range = [];
-    const rangeWithDots = [];
+    const range: number[] = [];
+    const rangeWithDots: Array<number | '...'> = [];
 
     for (
       let i = Math.max(2, currentPage - delta);
@@ -134,12 +138,12 @@ export default function PostsPagination({
       rangeWithDots.push(totalPages);
     }
 
-    return rangeWithDots;
+    return [...new Set(rangeWithDots)];
   };
 
   return (
     <Pagination>
-      <PaginationContent>
+      <PaginationContent className="flex-wrap justify-center gap-2 sm:gap-1">
         <PaginationItem>
           <PaginationPrevious
             onClick={() => onPageChange(currentPage - 1)}
@@ -154,7 +158,7 @@ export default function PostsPagination({
               <PaginationLink
                 isActive={currentPage === page}
                 onClick={() => onPageChange(page as number)}
-                className="min-w-[40px]"
+                className="min-w-[40px] px-3 sm:px-4"
               >
                 {page}
               </PaginationLink>
