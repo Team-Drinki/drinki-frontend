@@ -1,16 +1,17 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
 import { useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { PencilLine, Trash2 } from 'lucide-react';
+import { EllipsisVertical } from 'lucide-react';
 import { toast } from 'sonner';
 import BackButton from '@/components/common/BackButton';
+import CustomTooltip from '@/components/common/CustomTooltip';
 import Rating from '@/components/common/Rating';
 import AppearanceBar, { type AppearanceColor } from '@/components/tasting-note/AppearanceBar';
 import FlavorTile from '@/components/tasting-note/FlavorTile';
+import TastingNoteCommentSection from '@/components/tasting-note/TastingNoteCommentSection';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { authQueryOptions } from '@/query/options/auth';
 import { tastingNoteDetailQueryOptions } from '@/query/options/tasting-note';
@@ -22,7 +23,6 @@ import {
 } from '@/components/tasting-note/FlavorGroups';
 import { deleteTastingNote } from '@/api/tasting-note';
 import { flattenRatingMapToTiles } from '@/lib/tasting-note';
-import { Button } from '@/components/ui/button';
 import { tastingNoteDetail as tastingNoteDetailMock } from '@/app/mockup';
 
 const makeBegIconMap = (items: BegFlavorItemDef[]) =>
@@ -222,50 +222,73 @@ export default function TastingNoteDetailPage() {
     appearance: (mockDetail?.content.appearance ?? 'gold') as AppearanceColor,
   };
   const tastingContext = '본문 자리';
-
   return (
     <main className="mx-auto flex w-full max-w-[1120px] flex-col gap-8 px-5 pb-20 pt-7 sm:px-8 lg:px-10">
       <BackButton className="-ml-2 text-[#2d241d]">Tasting Note</BackButton>
 
       <section className="px-5 py-6 sm:px-7 sm:py-7 lg:px-9 lg:py-8">
         <div className="flex flex-col gap-6 border-b border-[#efe5d9] pb-6">
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="flex flex-col gap-5">
             <div className="space-y-4">
               <h1 className="max-w-4xl text-[clamp(1.8rem,4vw,2.7rem)] font-semibold leading-[1.2] text-[#241a13]">
                 {data.title}
               </h1>
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-3 text-sm text-[#6e5a4b]">
+
+              <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-2.5">
                   <Avatar className="h-9 w-9 border border-[#eadfce]">
                     <AvatarImage src={data.writerImage ?? undefined} />
                     <AvatarFallback>{data.writerName.slice(0, 1)}</AvatarFallback>
                   </Avatar>
-                  <span className="font-semibold text-[#3a2c21]">{data.writerName}</span>
+                  <span className="text-xl font-semibold text-[#241a13]">{data.writerName}</span>
                 </div>
-                <span>{formatShortDate(data.createdAt)}</span>
+
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[#241a13]">
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">작성</span>
+                    <span>{formatShortDate(data.createdAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-semibold">조회수</span>
+                    <span>{formatCompactNumber(data.viewCount)}</span>
+                  </div>
+                  <CustomTooltip
+                    trigger={<EllipsisVertical className="h-5 w-5 text-[#653205]" />}
+                    options={
+                      isOwner
+                        ? [
+                            {
+                              key: 'edit',
+                              label: '수정',
+                              onSelect: () => {
+                                router.push(`/tasting-note/edit?noteId=${data.id}`);
+                              },
+                            },
+                            {
+                              key: 'delete',
+                              label: deleteMutation.isPending ? '삭제 중...' : '삭제',
+                              onSelect: () => {
+                                if (!deleteMutation.isPending) {
+                                  void handleDelete();
+                                }
+                              },
+                            },
+                          ]
+                        : [
+                            {
+                              key: 'report',
+                              label: '신고',
+                              onSelect: () => {
+                                toast.info('신고 기능은 준비 중이에요.', { duration: 1500 });
+                              },
+                            },
+                          ]
+                    }
+                    contentClassName="rounded-xl px-0 py-0"
+                  />
+                </div>
               </div>
             </div>
-
-            {isOwner && (
-              <div className="flex gap-2 self-start">
-                <Button asChild type="button" variant="outline" className="h-10 rounded-full border-[#d9c9b4] px-4 text-[#5b4633]">
-                  <Link href={`/tasting-note/edit?noteId=${data.id}`}>
-                    <PencilLine className="mr-2 h-4 w-4" />
-                    수정
-                  </Link>
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="h-10 rounded-full border-[#ecd4d0] px-4 text-[#a24f46] hover:text-[#a24f46]"
-                  disabled={deleteMutation.isPending}
-                  onClick={() => void handleDelete()}
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  {deleteMutation.isPending ? '삭제 중...' : '삭제'}
-                </Button>
-              </div>
-            )}
           </div>
         </div>
 
@@ -332,6 +355,13 @@ export default function TastingNoteDetailPage() {
             </div>
           </section>
 
+          <TastingNoteCommentSection
+            noteId={data.id}
+            currentUserId={currentUserId}
+            comments={data.comments}
+            likeCount={data.likeCount}
+            isLikeActive={data.likeCount > 0}
+          />
         </div>
       </section>
     </main>

@@ -16,6 +16,10 @@ interface CommentFormProps {
   inputRef?: RefObject<HTMLTextAreaElement | null>;
   onSubmitted?: () => void;
   onCancel?: () => void;
+  onSubmitComment?: (content: string) => Promise<void> | void;
+  placeholder?: string;
+  submitLabel?: string;
+  disabled?: boolean;
 }
 export default function CommentForm({
   nickname,
@@ -25,14 +29,21 @@ export default function CommentForm({
   inputRef,
   onSubmitted,
   onCancel,
+  onSubmitComment,
+  placeholder = '댓글을 작성해주세요.',
+  submitLabel = '등록',
+  disabled = false,
 }: CommentFormProps) {
   const schema = z.object({
     comment: z.string().min(1, { message: '댓글이 입력되지 않았습니다.' }),
   });
   const form = useForm({ resolver: zodResolver(schema), defaultValues: { comment: '' } });
   const submit = form.handleSubmit(async data => {
-    // 댓글 등록 로직 추가 예정
-    console.log('댓글 등록:', data.comment, '포스트 ID:', postId, '부모 ID:', parentId);
+    if (onSubmitComment) {
+      await onSubmitComment(data.comment);
+    } else {
+      console.log('댓글 등록:', data.comment, '포스트 ID:', postId, '부모 ID:', parentId);
+    }
     onSubmitted?.();
     form.reset();
   });
@@ -53,9 +64,10 @@ export default function CommentForm({
                       field.ref(el);
                       if (inputRef) inputRef.current = el;
                     }}
-                    placeholder="댓글을 작성해주세요."
-                    className="p-2 min-h-10"
+                    placeholder={placeholder}
+                    className="p-2 min-h-10 disabled:opacity-60"
                     autoComplete="off"
+                    disabled={disabled || form.formState.isSubmitting}
                   />
                 </FormControl>
               </FormItem>
@@ -64,13 +76,14 @@ export default function CommentForm({
           <div className="flex gap-2">
             {parentId && (
               <CustomButton
+                type="button"
                 className="px-3 py-2 rouned-lg bg-yellow-200 hover:bg-yellow-300 text-button text-brown"
                 onClick={onCancel}
               >
                 취소
               </CustomButton>
             )}
-            <SubmitButton>등록</SubmitButton>
+            <SubmitButton disabled={disabled || form.formState.isSubmitting}>{submitLabel}</SubmitButton>
           </div>
         </form>
       </Form>
