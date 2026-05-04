@@ -28,10 +28,17 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import AuthGuard from '@/components/auth/AuthGuard';
-import { getAlcoholList } from '@/api/alcohol';
+import { getAlcoholDetail, getAlcoholList } from '@/api/alcohol';
 import { alcoholListQueryOptions } from '@/query/options/alcohol';
 import { createTastingNote } from '@/api/tasting-note';
+import type { AlcoholDetail, AlcoholListItem } from '@/schema/api/alcohol';
 import { filesToDataUrls, toTastingNotePayload } from '@/lib/tasting-note';
+import { saveTastingNoteMeta } from '@/lib/tasting-note-meta';
+import {
+  matchesTastingNoteBoardCategory,
+  normalizeCategoryName,
+  type TastingNoteBoardCategory,
+} from '@/lib/tasting-note-category';
 
 type WhiskyMeta = {
   name: string;
@@ -41,6 +48,107 @@ type WhiskyMeta = {
   region: string;
   date: string;
 };
+
+function resolveAlcoholType(
+  item: { style?: string; category?: string },
+  fallbackCategory?: string
+) {
+  return item.style?.trim() || item.category?.trim() || fallbackCategory?.trim() || '';
+}
+
+function hydrateWhiskyMeta(
+  fallbackCategory: string,
+  item: AlcoholDetail | AlcoholListItem
+): WhiskyMeta {
+  return applyAlcoholMeta(fallbackCategory, item);
+}
+
+function ensureBoardCategoryAlcohol(
+  alcohol: AlcoholDetail | AlcoholListItem,
+  boardCategory: string
+) {
+  if (!matchesTastingNoteBoardCategory(alcohol.category, boardCategory)) {
+    throw new Error(`${boardCategory} 카테고리에 맞는 술을 선택해주세요.`);
+  }
+}
+
+async function findMatchingAlcohol(
+  boardCategory: string,
+  query = '',
+  pageSize = 100
+): Promise<AlcoholListItem | null> {
+  const selected = normalizeCategoryName(boardCategory);
+  if (!selected) {
+    const list = await getAlcoholList({ page: 1, size: 1, query: '' });
+    return list.items[0] ?? null;
+  }
+
+  for (let page = 1; page <= 50; page += 1) {
+    const result = await getAlcoholList({ page, size: pageSize, query });
+    const matched = result.items.find(item =>
+      matchesTastingNoteBoardCategory(item.category, selected)
+    );
+    if (matched) {
+      return matched;
+    }
+
+    if (result.pageUtil.hasNext === false) {
+      break;
+    }
+  }
+
+  return null;
+}
+
+async function hydrateSelectedAlcohol(alcoholId: number, boardCategory: string) {
+  const detail = await getAlcoholDetail(alcoholId);
+  ensureBoardCategoryAlcohol(detail, boardCategory);
+  return detail;
+}
+
+function normalizeTasteDate(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return new Date().toISOString();
+  }
+
+  if (/^\d{4}\.\d{2}\.\d{2}$/.test(trimmed)) {
+    const normalized = trimmed.replace(/\./g, '-');
+    return new Date(`${normalized}T00:00:00.000Z`).toISOString();
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return new Date(`${trimmed}T00:00:00.000Z`).toISOString();
+  }
+
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString();
+  }
+
+  return new Date().toISOString();
+}
+
+function applyAlcoholMeta(
+  fallbackCategory: string,
+  item: {
+    name: string;
+    proof: number;
+    style?: string;
+    category?: string;
+    price: number;
+    location?: string;
+  }
+): WhiskyMeta {
+  return {
+    name: item.name,
+    abv: item.proof ? String(item.proof) : '',
+    type: resolveAlcoholType(item, fallbackCategory),
+    price: item.price ? String(item.price) : '',
+    region: item.location ?? '',
+    date: '',
+  };
+}
 
 export default function TastingNoteWritePage() {
   return (
@@ -57,7 +165,7 @@ function TastingNoteWritePageContent() {
   const [mode, setMode] = useState<'beginner' | 'expert'>('beginner');
   const [keyword, setKeyword] = useState('');
   const [title, setTitle] = useState('');
-  const [boardCategory, setBoardCategory] = useState('');
+  const [boardCategory, setBoardCategory] = useState<TastingNoteBoardCategory | ''>('');
   const [selectedAlcoholId, setSelectedAlcoholId] = useState<number | null>(null);
   const [whisky, setWhisky] = useState<WhiskyMeta>({
     name: '',
@@ -99,29 +207,31 @@ function TastingNoteWritePageContent() {
 
       return createTastingNote({
         title: title.trim(),
+        content: comment.trim() ? comment.trim() : null,
         alcoholId,
-        createdTime: whisky.date.trim() || new Date().toISOString(),
+        createdTime: normalizeTasteDate(whisky.date),
         ...toTastingNotePayload(flavors),
         images: imagePayload,
       });
     },
-    onSuccess: result => {
-      toast.success('테이스팅 노트를 등록했어요.', { duration: 1200 });
-      router.push(`/tasting-note/${result.id}`);
-    },
+    throwOnError: false,
     onError: error => {
       const message = error instanceof Error ? error.message : '등록 중 문제가 발생했어요.';
       toast.error(message, { duration: 1500 });
     },
   });
 
-  const searchItems = alcoholSearchResult?.items ?? [];
+  const searchItems = (alcoholSearchResult?.items ?? []).filter(item =>
+    matchesTastingNoteBoardCategory(item.category, boardCategory)
+  );
 
-  const handleSelectAlcohol = (
+  const handleSelectAlcohol = async (
     item: {
       id: number;
       name: string;
       proof: number;
+      categoryId: number | null;
+      category: string;
       style: string;
       price: number;
       location: string;
@@ -129,76 +239,125 @@ function TastingNoteWritePageContent() {
   ) => {
     setSelectedAlcoholId(item.id);
     setKeyword(item.name);
-    setWhisky(prev => ({
-      ...prev,
-      name: item.name,
-      abv: item.proof ? String(item.proof) : '',
-      type: item.style ?? '',
-      price: item.price ? String(item.price) : '',
-      region: item.location ?? '',
-    }));
+    setWhisky(prev => ({ ...prev, ...hydrateWhiskyMeta(boardCategory, item), date: prev.date }));
+
+    try {
+      const detail = await hydrateSelectedAlcohol(item.id, boardCategory);
+      setWhisky(prev => ({
+        ...prev,
+        name: detail.name,
+        abv: detail.proof ? String(detail.proof) : '',
+        type: resolveAlcoholType(detail, boardCategory),
+        price: detail.price ? String(detail.price) : '',
+        region: detail.location ?? '',
+      }));
+    } catch {
+      // Keep search-result values when detail hydration fails.
+    }
   };
 
   const resolveAlcoholId = async (): Promise<number> => {
+    const useFallbackAlcohol = async (): Promise<number> => {
+      const fallback = await findMatchingAlcohol(boardCategory);
+
+      if (!fallback) {
+        throw new Error(`${boardCategory} 카테고리로 등록 가능한 술 데이터가 없어 저장할 수 없어요.`);
+      }
+
+      ensureBoardCategoryAlcohol(fallback, boardCategory);
+      setSelectedAlcoholId(fallback.id);
+      setKeyword(fallback.name);
+      try {
+        const detail = await hydrateSelectedAlcohol(fallback.id, boardCategory);
+        setWhisky(prev => ({
+          ...prev,
+          name: detail.name,
+          abv: detail.proof ? String(detail.proof) : '',
+          type: resolveAlcoholType(detail, boardCategory),
+          price: detail.price ? String(detail.price) : '',
+          region: detail.location ?? '',
+        }));
+      } catch {
+        setWhisky(prev => ({
+          ...prev,
+          ...hydrateWhiskyMeta(boardCategory, fallback),
+          date: prev.date,
+        }));
+      }
+      return fallback.id;
+    };
+
     if (selectedAlcoholId) {
-      return selectedAlcoholId;
+      try {
+        const detail = await hydrateSelectedAlcohol(selectedAlcoholId, boardCategory);
+        setWhisky(prev => ({ ...prev, ...hydrateWhiskyMeta(boardCategory, detail), date: prev.date }));
+        return selectedAlcoholId;
+      } catch {
+        // Fall back to a category-matching alcohol below.
+      }
+
+      setSelectedAlcoholId(null);
+      return useFallbackAlcohol();
     }
 
     const inputName = whisky.name.trim() || keyword.trim();
     if (!inputName) {
-      throw new Error('술 이름을 검색하거나 직접 입력해주세요.');
+      return useFallbackAlcohol();
     }
 
-    const result = await getAlcoholList({
-      page: 1,
-      size: 20,
-      query: inputName,
-      category: boardCategory,
-    });
+    const matchedByName = await findMatchingAlcohol(boardCategory, inputName);
 
+    if (!matchedByName) {
+      return useFallbackAlcohol();
+    }
+
+    ensureBoardCategoryAlcohol(matchedByName, boardCategory);
     const normalizedInput = inputName.replace(/\s+/g, '').toLowerCase();
-    const exactMatch = result.items.find(
-      item => item.name.replace(/\s+/g, '').toLowerCase() === normalizedInput
-    );
+    const normalizedMatchedName = matchedByName.name.replace(/\s+/g, '').toLowerCase();
 
-    if (exactMatch) {
-      setSelectedAlcoholId(exactMatch.id);
-      setKeyword(exactMatch.name);
-      setWhisky(prev => ({
-        ...prev,
-        name: exactMatch.name,
-        abv: exactMatch.proof ? String(exactMatch.proof) : '',
-        type: exactMatch.style ?? '',
-        price: exactMatch.price ? String(exactMatch.price) : '',
-        region: exactMatch.location ?? '',
-      }));
-      return exactMatch.id;
-    }
-
-    if (result.items.length === 1) {
-      const [onlyItem] = result.items;
-      if (!onlyItem) {
-        throw new Error('등록된 술 정보를 찾지 못했어요.');
+    if (normalizedMatchedName === normalizedInput) {
+      setSelectedAlcoholId(matchedByName.id);
+      setKeyword(matchedByName.name);
+      try {
+        const detail = await hydrateSelectedAlcohol(matchedByName.id, boardCategory);
+        setWhisky(prev => ({
+          ...prev,
+          name: detail.name,
+          abv: detail.proof ? String(detail.proof) : '',
+          type: resolveAlcoholType(detail, boardCategory),
+          price: detail.price ? String(detail.price) : '',
+          region: detail.location ?? '',
+        }));
+      } catch {
+        setWhisky(prev => ({
+          ...prev,
+          ...hydrateWhiskyMeta(boardCategory, matchedByName),
+          date: prev.date,
+        }));
       }
+      return matchedByName.id;
+    }
 
-      setSelectedAlcoholId(onlyItem.id);
-      setKeyword(onlyItem.name);
+    setSelectedAlcoholId(matchedByName.id);
+    setKeyword(matchedByName.name);
+    try {
+      const detail = await hydrateSelectedAlcohol(matchedByName.id, boardCategory);
       setWhisky(prev => ({
         ...prev,
-        name: onlyItem.name,
-        abv: onlyItem.proof ? String(onlyItem.proof) : '',
-        type: onlyItem.style ?? '',
-        price: onlyItem.price ? String(onlyItem.price) : '',
-        region: onlyItem.location ?? '',
+        name: detail.name,
+        abv: detail.proof ? String(detail.proof) : '',
+        type: resolveAlcoholType(detail, boardCategory),
+        price: detail.price ? String(detail.price) : '',
+        region: detail.location ?? '',
       }));
-      return onlyItem.id;
+    } catch {
+      setWhisky(prev => ({
+        ...prev,
+        ...hydrateWhiskyMeta(boardCategory, matchedByName),
+        date: prev.date,
+      }));
     }
-
-    if (result.items.length === 0) {
-      throw new Error('입력한 술 이름과 일치하는 등록 데이터를 찾지 못했어요.');
-    }
-
-    throw new Error('같은 이름의 검색 결과가 여러 개 있어요. 검색 결과에서 정확한 술을 선택해주세요.');
+    return matchedByName.id;
   };
 
   const handleSubmit = async () => {
@@ -223,7 +382,21 @@ function TastingNoteWritePageContent() {
 
     try {
       const resolvedAlcoholId = await resolveAlcoholId();
-      await createNoteMutation.mutateAsync(resolvedAlcoholId);
+      const result = await createNoteMutation.mutateAsync(resolvedAlcoholId);
+      saveTastingNoteMeta(result.id, {
+        whiskyName: (whisky.name || keyword).trim(),
+        tastingDate: normalizeTasteDate(whisky.date),
+        abv: whisky.abv.trim(),
+        type: whisky.type.trim() || boardCategory.trim(),
+        price: whisky.price.trim(),
+        region: whisky.region.trim(),
+        rating,
+        appearance,
+        mode,
+        alcoholId: resolvedAlcoholId,
+      });
+      toast.success('테이스팅 노트를 등록했어요.', { duration: 1200 });
+      router.push(`/tasting-note/${result.id}?alcoholId=${resolvedAlcoholId}`);
     } catch (error) {
       const message = error instanceof Error ? error.message : '술 정보를 확인하지 못했어요.';
       toast.info(message, { duration: 1500 });
@@ -251,9 +424,9 @@ function TastingNoteWritePageContent() {
               {/* 드롭다운 (게시판 주제 선택) */}
               <div className="col-span-12">
                 <Select
-                  value={boardCategory || undefined}
+                  value={boardCategory}
                   onValueChange={v => {
-                    setBoardCategory(v);
+                    setBoardCategory(v as TastingNoteBoardCategory);
                     setSelectedAlcoholId(null);
                   }}
                   onOpenChange={setCatOpen}
@@ -462,7 +635,7 @@ function BeginnerForm(props: {
           value={whisky.name}
           onChange={v => setWhisky({ ...whisky, name: v })}
         />
-        <Field
+        <DateField
           label="시음 날짜"
           value={whisky.date}
           onChange={v => setWhisky({ ...whisky, date: v })}
@@ -566,7 +739,7 @@ function ExpertForm(props: {
           value={whisky.name}
           onChange={v => setWhisky({ ...whisky, name: v })}
         />
-        <Field
+        <DateField
           label="시음 날짜"
           value={whisky.date}
           onChange={v => setWhisky({ ...whisky, date: v })}
@@ -703,6 +876,47 @@ function Field({
       <Input
         value={value}
         onChange={e => onChange(e.target.value)}
+        className="w-full bg-white border-gray-300"
+      />
+    </div>
+  );
+}
+
+function DateField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const handleChange = (nextValue: string) => {
+    const digits = nextValue.replace(/\D/g, '').slice(0, 8);
+
+    if (digits.length <= 4) {
+      onChange(digits);
+      return;
+    }
+
+    if (digits.length <= 6) {
+      onChange(`${digits.slice(0, 4)}.${digits.slice(4)}`);
+      return;
+    }
+
+    onChange(`${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(6)}`);
+  };
+
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-semibold text-brown-800">{label}</label>
+      <Input
+        type="text"
+        value={value}
+        onChange={e => handleChange(e.target.value)}
+        placeholder="YYYY.MM.DD"
+        inputMode="numeric"
+        maxLength={10}
         className="w-full bg-white border-gray-300"
       />
     </div>
