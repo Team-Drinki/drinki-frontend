@@ -54,21 +54,27 @@ export type PostDetailResponse = {
 export type PostListItem = {
   id: string | number;
   title: string;
-  author?: string;
+  author: PostAuthor;
   imageUrl?: string;
-  avatarUrl?: string;
-  likes?: number;
-  views?: number;
-  comments?: number;
-  category?: PostCategory;
-  createdAt?: string;
+  category: string;
+  body: string;
+  viewCnt: number;
+  likeCnt: number;
+  commentCnt: number;
+  isLiked: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 // postListResponse 대응 타입
 export type PostListResponse = {
   items: PostListItem[];
-  totalPages?: number;
-  totalElements?: number;
+  pageUtil?: {
+    page: number;
+    size: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
 // postListRequest 대응 타입

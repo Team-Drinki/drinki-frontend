@@ -1,4 +1,5 @@
 import { apiInstance } from '@/api/instance';
+import { ZodError } from 'zod';
 import {
   tastingNoteCommentMutationResponseSchema,
   tastingNoteCommentPayloadSchema,
@@ -41,7 +42,26 @@ export async function getTastingNoteList(
 
 export async function getTastingNote(noteId: number): Promise<TastingNoteDetail> {
   const { data } = await apiInstance.get<unknown>(`notes/${noteId}`);
-  return tastingNoteDetailSchema.parse(data);
+
+  try {
+    return tastingNoteDetailSchema.parse(data);
+  } catch (error) {
+    if (error instanceof ZodError) {
+      console.error('[tasting-note] detail schema parse failed', {
+        noteId,
+        issues: error.issues,
+        rawResponse: data,
+      });
+    } else {
+      console.error('[tasting-note] detail request failed after response', {
+        noteId,
+        rawResponse: data,
+        error,
+      });
+    }
+
+    throw error;
+  }
 }
 
 export async function getHotTastingNotes() {

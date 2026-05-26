@@ -15,19 +15,26 @@ import { useState } from 'react';
 
 export default function ImageGallery({ images }: { images: string[] }) {
   const [imageIndex, setImageIndex] = useState(-1);
-  const slides = images.map(src => ({ src }));
+  const validImages = images.filter(image => image.trim().length > 0);
+  const slides = validImages.map(src => ({ src }));
 
   return (
     <Carousel>
       <CarouselContent>
-        {images.map((image, index) => (
+        {validImages.map((image, index) => (
           <CarouselItem
             key={index}
             className="relative md:basis-1/2 lg:basis-1/3"
             onClick={() => setImageIndex(index)}
           >
             <div className="h-100 relative">
-              <Image src={image} alt={`tasting-note-${index}`} fill className="object-cover" />
+              <Image
+                src={image}
+                alt={`tasting-note-${index}`}
+                fill
+                unoptimized={/^https?:\/\//.test(image)}
+                className="object-cover"
+              />
             </div>
           </CarouselItem>
         ))}
@@ -35,13 +42,13 @@ export default function ImageGallery({ images }: { images: string[] }) {
       <Lightbox
         slides={slides}
         index={imageIndex}
-        open={imageIndex >= 0}
+        open={imageIndex >= 0 && validImages.length > 0}
         close={() => setImageIndex(-1)}
         styles={{
           root: { '--yarl__color_backdrop': 'rgba(0, 0, 0, .8)' },
         }}
       />
-      {images.length > 3 && (
+      {validImages.length > 3 && (
         <>
           <CarouselPrevious className="-left-10" />
           <CarouselNext className="-right-10" />

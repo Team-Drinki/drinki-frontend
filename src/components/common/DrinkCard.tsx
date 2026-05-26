@@ -25,13 +25,18 @@ export default function DrinkCard({
   views,
   comments,
 }: DrinkCardProps) {
+  const resolvedImageUrl = imageUrl.trim() || '/images/whisky.png';
+  const resolvedAvatarUrl = avatarUrl?.trim() || undefined;
+  const isRemoteImage = /^https?:\/\//.test(resolvedImageUrl);
+
   return (
     <Card className="flex h-[15.5rem] w-full flex-col items-start gap-0 overflow-hidden rounded-xl p-0 sm:h-[16rem] md:h-[18rem] md:max-w-none">
       <div className="relative h-[10rem] w-full sm:h-[10.5rem] md:h-[13rem]">
         <Image
-          src={imageUrl}
+          src={resolvedImageUrl}
           alt={title}
           fill
+          unoptimized={isRemoteImage}
           className="object-cover"
           sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
         />
@@ -47,7 +52,7 @@ export default function DrinkCard({
         <div className="flex w-full flex-row items-center justify-between">
           <div className="flex items-center gap-2">
             <Avatar className="h-4 w-4 sm:h-5 sm:w-5">
-              <AvatarImage src={avatarUrl} />
+              <AvatarImage src={resolvedAvatarUrl} />
               <AvatarFallback>N</AvatarFallback>
             </Avatar>
             <span className="max-w-[6rem] truncate text-[12px] sm:max-w-none sm:text-body3">

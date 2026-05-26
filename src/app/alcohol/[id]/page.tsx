@@ -29,6 +29,7 @@ export default async function AlcoholDetailPage({ params }: AlcoholDetailPagePro
     const recommendations = (await getAlcoholRecommendations(10))
       .filter(item => item.id !== id)
       .slice(0, 3);
+    const detailImageSrc = data.image?.trim() || '/images/whisky.png';
     return (
       <main className="flex justify-center flex-col mx-5 md:mx-16 lg:mx-32">
         <BackButton className="mt-10 mb-6">Drink</BackButton>
@@ -36,9 +37,10 @@ export default async function AlcoholDetailPage({ params }: AlcoholDetailPagePro
         <section className="flex flex-col lg:flex-row gap-8 lg:gap-16 mb-21">
           <div className="relative w-full max-w-[28.75rem] aspect-[115/154] bg-[var(--color-grey-100)] rounded-lg overflow-hidden flex-shrink-0">
             <Image
-              src={data.image ?? '/images/whisky.png'}
+              src={detailImageSrc}
               alt={data.name}
               fill
+              unoptimized={/^https?:\/\//.test(detailImageSrc)}
               sizes="(max-width: 1024px) 100vw, 460px"
               className="object-contain"
             />

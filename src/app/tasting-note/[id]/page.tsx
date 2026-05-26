@@ -1,8 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useMemo } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { EllipsisVertical } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,8 +22,9 @@ import {
   type FlavorItemDef,
 } from '@/components/tasting-note/FlavorGroups';
 import { deleteTastingNote } from '@/api/tasting-note';
+import { getAlcoholDetail } from '@/api/alcohol';
 import { flattenRatingMapToTiles } from '@/lib/tasting-note';
-import { tastingNoteDetail as tastingNoteDetailMock } from '@/app/mockup';
+import { readTastingNoteMeta, type TastingNoteMeta } from '@/lib/tasting-note-meta';
 
 const makeBegIconMap = (items: BegFlavorItemDef[]) =>
   new Map(items.map(item => [item.name, { iconSrc: item.iconSrc, iconActiveSrc: item.iconActiveSrc }]));
@@ -59,15 +60,6 @@ function buildFallbackName(title: string) {
   }
 
   return normalized.replace(/\s+(첫 시음|시음기|후기|리뷰)$/u, '');
-}
-
-function formatPrice(value: number | string) {
-  const amount = typeof value === 'string' ? Number(value) : value;
-  if (!Number.isFinite(amount)) {
-    return String(value);
-  }
-
-  return new Intl.NumberFormat('ko-KR').format(amount);
 }
 
 function InfoRow({
@@ -145,28 +137,46 @@ function FlavorSection({
 
 export default function TastingNoteDetailPage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const noteId = Number(params?.id);
   const queryClient = useQueryClient();
 
   const { data: currentUserId } = useQuery(authQueryOptions);
   const { data, isLoading, isError } = useQuery(tastingNoteDetailQueryOptions(noteId));
+  const [savedMeta, setSavedMeta] = useState<TastingNoteMeta | null>(null);
+
+  useEffect(() => {
+    if (!Number.isFinite(noteId) || noteId <= 0 || typeof window === 'undefined') {
+      return;
+    }
+
+    setSavedMeta(readTastingNoteMeta(noteId));
+  }, [noteId]);
+  const alcoholIdFromQuery = Number(searchParams.get('alcoholId'));
+  const alcoholId =
+    Number.isFinite(alcoholIdFromQuery) && alcoholIdFromQuery > 0
+      ? alcoholIdFromQuery
+      : (savedMeta?.alcoholId ?? data?.alcoholId ?? 0);
+  const { data: alcoholDetail } = useQuery({
+    queryKey: ['alcohol', 'detail', alcoholId],
+    queryFn: () => getAlcoholDetail(alcoholId),
+    enabled: Number.isFinite(alcoholId) && alcoholId > 0,
+    staleTime: 5 * 60 * 1000,
+    retry: false,
+  });
   const isOwner = currentUserId === data?.writerId;
 
   const aromaItems = useMemo(() => (data ? flattenRatingMapToTiles(data.aromaNote) : []), [data]);
   const palateItems = useMemo(() => (data ? flattenRatingMapToTiles(data.palateNote) : []), [data]);
   const finishItems = useMemo(() => (data ? flattenRatingMapToTiles(data.finishNote) : []), [data]);
-  const allFlavorItems = useMemo(() => [...aromaItems, ...palateItems, ...finishItems], [aromaItems, palateItems, finishItems]);
-  const topFlavors = useMemo(() => [...allFlavorItems].sort((a, b) => b.score - a.score).slice(0, 3), [allFlavorItems]);
-
   const imageList = useMemo(() => {
     const filtered = data?.images.filter(image => image.trim().length > 0) ?? [];
     return filtered.length > 0 ? filtered : ['/images/whisky.png'];
   }, [data?.images]);
 
   const previewImages = imageList.slice(0, 3);
-  const mockDetail = tastingNoteDetailMock.find(item => item.id === String(noteId)) ?? tastingNoteDetailMock[0];
-  const isExpertAppearance = mockDetail?.noteType === 'expert';
+  const isExpertAppearance = savedMeta?.mode === 'expert';
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteTastingNote(noteId),
@@ -210,18 +220,36 @@ export default function TastingNoteDetailPage() {
     );
   }
 
-  const tastingName = buildFallbackName(data.title);
+  const savedName = savedMeta?.whiskyName?.trim();
+  const savedAbv = savedMeta?.abv?.trim();
+  const savedType = savedMeta?.type?.trim();
+  const savedRegion = savedMeta?.region?.trim();
+  const savedPrice = savedMeta?.price?.trim();
+  const formattedSavedPrice =
+    savedPrice && /^\d[\d,]*$/.test(savedPrice.replace(/,/g, ''))
+      ? `${formatCompactNumber(Number(savedPrice.replace(/,/g, '')))}원`
+      : savedPrice || '-';
+  const hasSavedPrice = Boolean(savedPrice);
+  const tastingName =
+    savedName ||
+    alcoholDetail?.name ||
+    data.alcoholName ||
+    buildFallbackName(data.title);
   const detailInfo = {
-    whiskyName: mockDetail?.content.alchoolName ?? tastingName,
-    tastingDate: mockDetail?.content.tasteDate ?? formatShortDate(data.createdAt),
-    abv: mockDetail?.content.avb ? `${mockDetail.content.avb}도` : '-',
-    type: mockDetail?.content.type ?? '위스키',
-    price: mockDetail?.content.price ? formatPrice(mockDetail.content.price) : '-',
-    region: mockDetail?.content.region ?? '-',
-    rating: mockDetail?.content.rate ?? 0,
-    appearance: (mockDetail?.content.appearance ?? 'gold') as AppearanceColor,
+    whiskyName: tastingName || '-',
+    tastingDate: savedMeta?.tastingDate ? formatShortDate(savedMeta.tastingDate) : formatShortDate(data.createdAt),
+    abv: savedAbv || (alcoholDetail?.proof ? `${alcoholDetail.proof}%` : '-'),
+    type: savedType || alcoholDetail?.style || alcoholDetail?.category || '-',
+    price: hasSavedPrice
+      ? formattedSavedPrice
+      : alcoholDetail?.price
+        ? `${formatCompactNumber(alcoholDetail.price)}원`
+        : '-',
+    region: savedRegion || alcoholDetail?.location || '-',
+    rating: savedMeta?.rating ?? alcoholDetail?.rating ?? 0,
+    appearance: (savedMeta?.appearance ?? null) as AppearanceColor | null,
   };
-  const tastingContext = '본문 자리';
+  const tastingContext = data.content?.trim() || '본문이 없습니다.';
   return (
     <main className="mx-auto flex w-full max-w-[1120px] flex-col gap-8 px-5 pb-20 pt-7 sm:px-8 lg:px-10">
       <BackButton className="-ml-2 text-[#2d241d]">Tasting Note</BackButton>

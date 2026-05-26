@@ -73,7 +73,10 @@ export const tastingNoteCommentSchema = tastingNoteCommentRawSchema.transform(ra
 export const tastingNoteDetailSchema = z
   .object({
     noteId: z.coerce.number(),
+    alcoholId: z.coerce.number().nullable().optional(),
+    alcoholName: z.string().optional(),
     title: z.string(),
+    content: z.string().nullable().optional(),
     writerId: z.coerce.number(),
     writerName: z.string(),
     writerImage: z.string().nullable(),
@@ -89,7 +92,10 @@ export const tastingNoteDetailSchema = z
   })
   .transform(raw => ({
     id: raw.noteId,
+    alcoholId: raw.alcoholId,
+    alcoholName: raw.alcoholName,
     title: raw.title,
+    content: raw.content ?? null,
     writerId: raw.writerId,
     writerName: raw.writerName,
     writerImage: raw.writerImage,
@@ -122,7 +128,15 @@ export const tastingNoteCommentPayloadSchema = z.object({
 
 export const tastingNoteCreatePayloadSchema = z.object({
   title: z.string().min(1),
-  alcoholId: z.number().int().positive(),
+  content: z.string().nullable().optional(),
+  alcoholId: z.number().int().positive().nullable().optional(),
+  customAlcohol: z
+    .object({
+      name: z.string().min(1),
+      category: z.string().min(1),
+    })
+    .nullable()
+    .optional(),
   createdTime: z.string(),
   aroma_note: tastingNoteRatingMapSchema,
   palate_note: tastingNoteRatingMapSchema,
@@ -132,6 +146,7 @@ export const tastingNoteCreatePayloadSchema = z.object({
 
 export const tastingNoteUpdatePayloadSchema = z.object({
   title: z.string().min(1),
+  content: z.string().nullable().optional(),
   aroma_note: tastingNoteRatingMapSchema,
   palate_note: tastingNoteRatingMapSchema,
   finish_note: tastingNoteRatingMapSchema,

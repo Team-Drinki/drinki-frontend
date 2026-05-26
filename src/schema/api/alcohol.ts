@@ -1,5 +1,14 @@
 import { z } from 'zod';
 
+function normalizeOptionalImage(value: string | null | undefined): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 const alcoholRelationSchema = z
   .object({
     id: z.coerce.number(),
@@ -28,8 +37,10 @@ const alcoholDetailResponseSchema = z.object({
 export const alcoholDetailSchema = alcoholDetailResponseSchema.transform(data => ({
   id: data.id,
   name: data.name,
-  image: data.imageUrl,
+  image: normalizeOptionalImage(data.imageUrl),
+  price: data.price,
   proof: data.proof,
+  categoryId: data.category?.id ?? null,
   category: data.category?.name ?? '',
   location: data.location?.name ?? '',
   style: data.style?.name ?? '',
@@ -70,9 +81,10 @@ const alcoholListItemRawSchema = z.object({
 export const alcoholListItemSchema = alcoholListItemRawSchema.transform(data => ({
   id: data.id,
   name: data.name,
-  image: data.imageUrl,
+  image: normalizeOptionalImage(data.imageUrl),
   price: data.price,
   proof: data.proof,
+  categoryId: data.category?.id ?? null,
   category: data.category?.name ?? '',
   location: data.location?.name ?? '',
   style: data.style?.name ?? '',
