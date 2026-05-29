@@ -27,14 +27,21 @@ import { flattenRatingMapToTiles } from '@/lib/tasting-note';
 import { readTastingNoteMeta, type TastingNoteMeta } from '@/lib/tasting-note-meta';
 
 const makeBegIconMap = (items: BegFlavorItemDef[]) =>
-  new Map(items.map(item => [item.name, { iconSrc: item.iconSrc, iconActiveSrc: item.iconActiveSrc }]));
+  new Map(
+    items.map(item => [item.name, { iconSrc: item.iconSrc, iconActiveSrc: item.iconActiveSrc }])
+  );
 
 const makeExpertIconMap = (groups: { items: FlavorItemDef[] }[]) => {
   const flat = groups.flatMap(group => group.items);
-  return new Map(flat.map(item => [item.name, { iconSrc: item.iconSrc, iconActiveSrc: item.iconActiveSrc }]));
+  return new Map(
+    flat.map(item => [item.name, { iconSrc: item.iconSrc, iconActiveSrc: item.iconActiveSrc }])
+  );
 };
 
-const iconMap = new Map([...makeBegIconMap(FLAVOR_GROUPS_BEGINNER), ...makeExpertIconMap(FLAVOR_GROUPS_EXPERT)]);
+const iconMap = new Map([
+  ...makeBegIconMap(FLAVOR_GROUPS_BEGINNER),
+  ...makeExpertIconMap(FLAVOR_GROUPS_EXPERT),
+]);
 
 function formatShortDate(value: string) {
   const date = new Date(value);
@@ -62,13 +69,7 @@ function buildFallbackName(title: string) {
   return normalized.replace(/\s+(첫 시음|시음기|후기|리뷰)$/u, '');
 }
 
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="grid grid-cols-[5.5rem_1fr] gap-3 py-3">
       <dt className="text-sm font-semibold text-[#7e6b5a]">{label}</dt>
@@ -205,11 +206,17 @@ export default function TastingNoteDetailPage() {
   };
 
   if (!Number.isFinite(noteId) || noteId <= 0) {
-    return <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-red-600">잘못된 노트 경로입니다.</div>;
+    return (
+      <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-red-600">
+        잘못된 노트 경로입니다.
+      </div>
+    );
   }
 
   if (isLoading) {
-    return <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-grey-700">불러오는 중...</div>;
+    return (
+      <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-grey-700">불러오는 중...</div>
+    );
   }
 
   if (isError || !data) {
@@ -231,13 +238,12 @@ export default function TastingNoteDetailPage() {
       : savedPrice || '-';
   const hasSavedPrice = Boolean(savedPrice);
   const tastingName =
-    savedName ||
-    alcoholDetail?.name ||
-    data.alcoholName ||
-    buildFallbackName(data.title);
+    savedName || alcoholDetail?.name || data.alcoholName || buildFallbackName(data.title);
   const detailInfo = {
     whiskyName: tastingName || '-',
-    tastingDate: savedMeta?.tastingDate ? formatShortDate(savedMeta.tastingDate) : formatShortDate(data.createdAt),
+    tastingDate: savedMeta?.tastingDate
+      ? formatShortDate(savedMeta.tastingDate)
+      : formatShortDate(data.createdAt),
     abv: savedAbv || (alcoholDetail?.proof ? `${alcoholDetail.proof}%` : '-'),
     type: savedType || alcoholDetail?.style || alcoholDetail?.category || '-',
     price: hasSavedPrice
@@ -339,7 +345,9 @@ export default function TastingNoteDetailPage() {
               ))}
             </div>
             {imageList.length > previewImages.length && (
-              <p className="text-sm text-[#8f7d6d]">이미지 {imageList.length}장 중 일부를 미리 보여주고 있습니다.</p>
+              <p className="text-sm text-[#8f7d6d]">
+                이미지 {imageList.length}장 중 일부를 미리 보여주고 있습니다.
+              </p>
             )}
           </section>
 
@@ -388,7 +396,7 @@ export default function TastingNoteDetailPage() {
             currentUserId={currentUserId}
             comments={data.comments}
             likeCount={data.likeCount}
-            isLikeActive={data.likeCount > 0}
+            isLikeActive={false}
           />
         </div>
       </section>

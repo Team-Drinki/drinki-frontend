@@ -17,6 +17,11 @@ interface CommentProps {
   depth?: number; // 대댓글의 깊이 (기본값 0)
   canReply?: boolean;
   showActionMenu?: boolean;
+  isLiked?: boolean;
+  onToggleLike?: (
+    commentId: number | string,
+    nextLiked: boolean
+  ) => Promise<number | void> | number | void;
 }
 
 export default function Comment({
@@ -30,29 +35,37 @@ export default function Comment({
   depth = 0,
   canReply = true,
   showActionMenu = true,
+  isLiked = false,
+  onToggleLike,
 }: CommentProps) {
   const currentUserId = 1; // 현재 로그인한 사용자 id (자신이 작성한 포스트/댓글일 경우 더보기 버튼 툴팁이 바뀜)
 
   const { openFor } = useReplyComposer();
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(isLiked);
   const [displayLikes, setDisplayLikes] = useState(likes);
 
   useEffect(() => {
+    setLiked(isLiked);
     setDisplayLikes(likes);
-  }, [likes]);
+  }, [isLiked, likes]);
 
-  const handleToggleLike = () => {
-    // 임시 저장: 백엔드 댓글 좋아요 API가 없어 화면 상태와 count만 로컬에서 토글합니다.
-    setLiked(prev => {
-      const next = !prev;
-      setDisplayLikes(count => {
-        if (next) {
-          return count + 1;
-        }
-        return Math.max(0, count - 1);
-      });
-      return next;
-    });
+  const handleToggleLike = async () => {
+    const prevLiked = liked;
+    const nextLiked = !prevLiked;
+    const previousCount = displayLikes;
+
+    setLiked(nextLiked);
+    setDisplayLikes(count => (nextLiked ? count + 1 : Math.max(0, count - 1)));
+
+    try {
+      const nextCount = await onToggleLike?.(commentId, nextLiked);
+      if (typeof nextCount === 'number') {
+        setDisplayLikes(nextCount);
+      }
+    } catch {
+      setLiked(prevLiked);
+      setDisplayLikes(previousCount);
+    }
   };
 
   return (

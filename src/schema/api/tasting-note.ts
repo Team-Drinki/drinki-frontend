@@ -1,6 +1,9 @@
 import { z } from 'zod';
 
-export const tastingNoteRatingMapSchema = z.record(z.string(), z.record(z.string(), z.coerce.number()));
+export const tastingNoteRatingMapSchema = z.record(
+  z.string(),
+  z.record(z.string(), z.coerce.number())
+);
 
 export const tastingNotePageUtilSchema = z.object({
   currentPage: z.coerce.number(),
@@ -102,7 +105,8 @@ export const tastingNoteDetailSchema = z
     likeCount: raw.like,
     unlikeCount: raw.unlike,
     viewCount: raw.viewer,
-    createdAt: typeof raw.createdTime === 'string' ? raw.createdTime : raw.createdTime.toISOString(),
+    createdAt:
+      typeof raw.createdTime === 'string' ? raw.createdTime : raw.createdTime.toISOString(),
     aromaNote: raw.aroma_note,
     palateNote: raw.palate_note,
     finishNote: raw.finish_note,
@@ -118,6 +122,11 @@ export const tastingNoteMutationResponseSchema = z.object({
 export const tastingNoteCommentMutationResponseSchema = z.object({
   success: z.boolean(),
   id: z.coerce.number(),
+});
+
+export const tastingNoteLikeToggleResponseSchema = z.object({
+  liked: z.boolean(),
+  likeCount: z.coerce.number(),
 });
 
 export const tastingNoteCommentPayloadSchema = z.object({
@@ -162,3 +171,4 @@ export type TastingNoteDetail = z.infer<typeof tastingNoteDetailSchema>;
 export type TastingNoteCreatePayload = z.infer<typeof tastingNoteCreatePayloadSchema>;
 export type TastingNoteUpdatePayload = z.infer<typeof tastingNoteUpdatePayloadSchema>;
 export type TastingNoteCommentPayload = z.infer<typeof tastingNoteCommentPayloadSchema>;
+export type TastingNoteLikeToggleResponse = z.infer<typeof tastingNoteLikeToggleResponseSchema>;

@@ -1,16 +1,30 @@
+'use client';
+
 import Comment from './Comment';
 import CommentForm from './CommentForm';
 import Heart from '../svg/Heart';
 import CommentIcon from '../svg/CommentIcon';
-import { communityPostsDetail } from '@/app/mockup';
 import { mockComments } from '@/lib/comments/mockComments';
 import { buildCommentTree, type CommentNode } from '@/lib/comments/buildCommentTree';
 import { ReplyComposerProvider } from './ReplyComposerContext';
 import ReplySlot from './ReplySlot';
 
-export default async function CommentSection({ postId }: { postId: string }) {
+export default function CommentSection({
+  postId,
+  likeCount = 0,
+  commentCount = mockComments.length,
+  isLiked = false,
+  isLikePending = false,
+  onToggleLike,
+}: {
+  postId: string;
+  likeCount?: number;
+  commentCount?: number;
+  isLiked?: boolean;
+  isLikePending?: boolean;
+  onToggleLike?: () => void;
+}) {
   const tree = buildCommentTree(mockComments);
-  const data = communityPostsDetail.find(post => post.id === postId);
 
   const renderTree = (nodes: CommentNode[], depth = 0) => (
     <ul className={depth === 0 ? 'divide-y divide-grey-400' : 'space-y-0'}>
@@ -36,13 +50,19 @@ export default async function CommentSection({ postId }: { postId: string }) {
   return (
     <section className="flex flex-col gap-5 my-5">
       <div className="flex gap-5 ml-5 text-head6 text-sub-1">
-        <div className="flex gap-2 items-center">
-          <Heart />
-          <span>{data?.postLikes}</span>
-        </div>
+        <button
+          type="button"
+          className="flex gap-2 items-center disabled:cursor-not-allowed disabled:opacity-60"
+          onClick={onToggleLike}
+          disabled={!onToggleLike || isLikePending}
+          aria-pressed={isLiked}
+        >
+          <Heart fill={isLiked} />
+          <span>{likeCount}</span>
+        </button>
         <div className="flex gap-2 items-center">
           <CommentIcon />
-          <span>{mockComments.length}</span>
+          <span>{commentCount}</span>
         </div>
       </div>
       <ReplyComposerProvider>

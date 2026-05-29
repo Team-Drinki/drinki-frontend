@@ -3,7 +3,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { createTastingNoteComment } from '@/api/tasting-note';
+import {
+  createTastingNoteComment,
+  toggleTastingNoteCommentLike,
+  toggleTastingNoteLike,
+} from '@/api/tasting-note';
 import Comment from '@/components/comment/Comment';
 import CommentForm from '@/components/comment/CommentForm';
 import { ReplyComposerProvider } from '@/components/comment/ReplyComposerContext';
@@ -70,6 +74,34 @@ function TastingNoteCommentTree({
     },
   });
 
+  const toggleNoteLikeMutation = useMutation({
+    mutationFn: () => toggleTastingNoteLike(noteId),
+    onSuccess: async result => {
+      setLiked(result.liked);
+      setDisplayLikeCount(result.likeCount);
+      await queryClient.invalidateQueries({ queryKey: ['tasting-note'] });
+    },
+    onError: error => {
+      setLiked(isLikeActive);
+      setDisplayLikeCount(likeCount);
+      const message = error instanceof Error ? error.message : '좋아요 처리에 실패했어요.';
+      toast.error(message, { duration: 1500 });
+    },
+  });
+
+  const toggleCommentLikeMutation = useMutation({
+    mutationFn: ({ commentId }: { commentId: number }) =>
+      toggleTastingNoteCommentLike(noteId, commentId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['tasting-note', 'detail', noteId] });
+      await queryClient.invalidateQueries({ queryKey: ['tasting-note'] });
+    },
+    onError: error => {
+      const message = error instanceof Error ? error.message : '댓글 좋아요 처리에 실패했어요.';
+      toast.error(message, { duration: 1500 });
+    },
+  });
+
   const handleCreateComment = async (content: string, parentId: number | null = null) => {
     if (!canWrite) {
       toast.error('로그인 후 댓글을 작성할 수 있어요.', { duration: 1500 });
@@ -80,17 +112,14 @@ function TastingNoteCommentTree({
   };
 
   const handleToggleLike = () => {
-    // 임시 저장: 백엔드 좋아요 API가 아직 없어 화면 상태와 count만 로컬에서 토글합니다.
-    setLiked(prev => {
-      const next = !prev;
-      setDisplayLikeCount(count => {
-        if (next) {
-          return count + 1;
-        }
-        return Math.max(0, count - 1);
-      });
-      return next;
-    });
+    if (!canWrite || toggleNoteLikeMutation.isPending) {
+      return;
+    }
+
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+    setDisplayLikeCount(count => (nextLiked ? count + 1 : Math.max(0, count - 1)));
+    toggleNoteLikeMutation.mutate();
   };
 
   const renderTree = (nodes: CommentNode[], depth = 0) => (
@@ -108,6 +137,12 @@ function TastingNoteCommentTree({
             depth={depth}
             canReply={canWrite}
             showActionMenu={false}
+            onToggleLike={async commentId => {
+              const result = await toggleCommentLikeMutation.mutateAsync({
+                commentId: Number(commentId),
+              });
+              return result.likeCount;
+            }}
           />
           {node.children.length > 0 && renderTree(node.children, depth + 1)}
           <ReplySlot
@@ -134,6 +169,7 @@ function TastingNoteCommentTree({
           type="button"
           className="flex items-center gap-2.5 cursor-pointer"
           onClick={handleToggleLike}
+          disabled={!canWrite || toggleNoteLikeMutation.isPending}
           aria-pressed={liked}
         >
           <span className="inline-flex scale-[1.22]">

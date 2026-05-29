@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import {
   tastingNoteCommentMutationResponseSchema,
   tastingNoteCommentPayloadSchema,
+  tastingNoteLikeToggleResponseSchema,
   tastingNoteCreatePayloadSchema,
   tastingNoteDetailSchema,
   tastingNoteListOnlyResponseSchema,
@@ -97,11 +98,7 @@ export async function createTastingNoteComment(noteId: number, payload: TastingN
   return tastingNoteCommentMutationResponseSchema.parse(data);
 }
 
-export async function updateTastingNoteComment(
-  noteId: number,
-  commentId: number,
-  content: string
-) {
+export async function updateTastingNoteComment(noteId: number, commentId: number, content: string) {
   const { data } = await apiInstance.put<unknown>(`notes/${noteId}/comments/${commentId}`, {
     content,
   });
@@ -111,4 +108,14 @@ export async function updateTastingNoteComment(
 export async function deleteTastingNoteComment(noteId: number, commentId: number) {
   const { data } = await apiInstance.delete<unknown>(`notes/${noteId}/comments/${commentId}`);
   return tastingNoteCommentMutationResponseSchema.parse(data);
+}
+
+export async function toggleTastingNoteLike(noteId: number) {
+  const { data } = await apiInstance.post<unknown>(`notes/${noteId}/like`);
+  return tastingNoteLikeToggleResponseSchema.parse(data);
+}
+
+export async function toggleTastingNoteCommentLike(noteId: number, commentId: number) {
+  const { data } = await apiInstance.post<unknown>(`notes/${noteId}/comments/${commentId}/like`);
+  return tastingNoteLikeToggleResponseSchema.parse(data);
 }
