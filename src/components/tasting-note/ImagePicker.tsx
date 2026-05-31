@@ -5,17 +5,26 @@ import { useRef } from 'react';
 type Props = {
   images: File[];
   onChange: (next: File[]) => void;
+  existingImages?: string[];
+  onExistingImagesChange?: (next: string[]) => void;
   max?: number; // 기본 3
 };
 
-export default function ImagePicker({ images, onChange, max = 3 }: Props) {
+export default function ImagePicker({
+  images,
+  onChange,
+  existingImages = [],
+  onExistingImagesChange,
+  max = 3,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const imageCount = existingImages.length + images.length;
 
   const openFile = () => inputRef.current?.click();
 
   const handlePick = (file: File | null) => {
     if (!file) return;
-    if (images.length >= max) return;
+    if (imageCount >= max) return;
     onChange([...images, file]);
   };
 
@@ -25,10 +34,31 @@ export default function ImagePicker({ images, onChange, max = 3 }: Props) {
     onChange(next);
   };
 
+  const removeExisting = (idx: number) => {
+    onExistingImagesChange?.(existingImages.filter((_, currentIdx) => currentIdx !== idx));
+  };
+
   return (
     <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
       {/* 가로 스크롤 갤러리 */}
       <div className="flex gap-3 overflow-x-auto pb-2">
+        {existingImages.map((src, i) => (
+          <div
+            key={`existing-${i}`}
+            className="relative h-40 w-[280px] flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white"
+          >
+            <img src={src} alt={`existing-image-${i}`} className="h-full w-full object-cover" />
+            <button
+              type="button"
+              onClick={() => removeExisting(i)}
+              className="absolute right-2 top-2 rounded-full bg-white/90 px-2 text-xs shadow"
+              aria-label="기존 이미지 삭제"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+
         {/* 이미 추가된 썸네일들 */}
         {images.map((f, i) => (
           <div
@@ -52,7 +82,7 @@ export default function ImagePicker({ images, onChange, max = 3 }: Props) {
         ))}
 
         {/* + 추가 카드: 항상 1개만 표시, max 도달 시 숨김 */}
-        {images.length < max && (
+        {imageCount < max && (
           <button
             type="button"
             onClick={openFile}
@@ -72,7 +102,9 @@ export default function ImagePicker({ images, onChange, max = 3 }: Props) {
         onChange={e => handlePick(e.target.files?.[0] ?? null)}
       />
 
-      <p className="mt-2 text-xs text-gray-500">최대 {max}장까지 추가할 수 있어요.</p>
+      <p className="mt-2 text-xs text-gray-500">
+        최대 {max}장까지 추가할 수 있어요. ({imageCount}/{max})
+      </p>
     </div>
   );
 }

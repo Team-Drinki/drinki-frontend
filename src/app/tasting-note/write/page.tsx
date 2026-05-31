@@ -1,9 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useMemo, useState, type Dispatch, type SetStateAction } from 'react';
-import { useRouter } from 'next/navigation';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,10 +30,11 @@ import {
 import AuthGuard from '@/components/auth/AuthGuard';
 import { getAlcoholDetail } from '@/api/alcohol';
 import { alcoholListQueryOptions } from '@/query/options/alcohol';
-import { createTastingNote } from '@/api/tasting-note';
+import { createTastingNote, updateTastingNote } from '@/api/tasting-note';
 import type { AlcoholDetail, AlcoholListItem } from '@/schema/api/alcohol';
-import { filesToDataUrls, toTastingNotePayload } from '@/lib/tasting-note';
-import { saveTastingNoteMeta } from '@/lib/tasting-note-meta';
+import { filesToDataUrls, fromTastingNoteDetail, toTastingNotePayload } from '@/lib/tasting-note';
+import { readTastingNoteMeta, saveTastingNoteMeta } from '@/lib/tasting-note-meta';
+import { tastingNoteDetailQueryOptions } from '@/query/options/tasting-note';
 import {
   matchesTastingNoteBoardCategory,
   type TastingNoteBoardCategory,
@@ -100,6 +101,30 @@ function normalizeTasteDate(value: string) {
   return new Date().toISOString();
 }
 
+function formatTasteDate(value?: string) {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}.${month}.${day}`;
+}
+
+function toBoardCategory(category?: string): TastingNoteBoardCategory {
+  if (category === '위스키' || category === '와인') {
+    return category;
+  }
+
+  return '기타';
+}
+
 function applyAlcoholMeta(
   fallbackCategory: string,
   item: {
@@ -131,8 +156,13 @@ export default function TastingNoteWritePage() {
 
 function TastingNoteWritePageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const noteId = Number(searchParams.get('noteId') ?? searchParams.get('id')) || undefined;
+  const queryClient = useQueryClient();
+  const isEditMode = Number.isFinite(noteId) && (noteId ?? 0) > 0;
   const [catOpen, setCatOpen] = useState(false); // ▼/▲ 토글용
   const [images, setImages] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
   const [mode, setMode] = useState<'beginner' | 'expert'>('beginner');
   const [keyword, setKeyword] = useState('');
   const [title, setTitle] = useState('');
@@ -155,6 +185,43 @@ function TastingNoteWritePageContent() {
     Palate: {},
     Finish: {},
   });
+  const [initialized, setInitialized] = useState(!isEditMode);
+  const {
+    data: editingNote,
+    isLoading: isEditingNoteLoading,
+    isError: isEditingNoteError,
+  } = useQuery(tastingNoteDetailQueryOptions(noteId ?? 0));
+
+  useEffect(() => {
+    if (!isEditMode || !editingNote || initialized) {
+      return;
+    }
+
+    const savedMeta = readTastingNoteMeta(editingNote.id);
+    const category = toBoardCategory(editingNote.alcoholCategory);
+    const whiskyName = savedMeta?.whiskyName || editingNote.alcoholName || '';
+
+    setTitle(editingNote.title);
+    setBoardCategory(category);
+    setSelectedAlcoholId(editingNote.alcoholId ?? null);
+    setKeyword(whiskyName);
+    setWhisky({
+      name: whiskyName,
+      abv: savedMeta?.abv ?? '',
+      type: savedMeta?.type || editingNote.alcoholCategory || category,
+      price: savedMeta?.price ?? '',
+      region: savedMeta?.region ?? '',
+      date: formatTasteDate(savedMeta?.tastingDate || editingNote.createdAt),
+    });
+    setRating(savedMeta?.rating ?? 0);
+    setAppearance(savedMeta?.appearance ?? null);
+    setMode(savedMeta?.mode ?? 'beginner');
+    setComment(editingNote.content ?? '');
+    setFlavors(fromTastingNoteDetail(editingNote));
+    setExistingImages(editingNote.images);
+    setImages([]);
+    setInitialized(true);
+  }, [editingNote, initialized, isEditMode]);
 
   const alcoholSearchQuery = useMemo(
     () =>
@@ -172,10 +239,19 @@ function TastingNoteWritePageContent() {
     enabled: keyword.trim().length > 0,
   });
 
-  const createNoteMutation = useMutation({
+  const saveNoteMutation = useMutation({
     mutationFn: async () => {
       const customAlcoholName = (whisky.name || keyword).trim();
       const uploadedImages = await filesToDataUrls(images);
+
+      if (isEditMode && noteId) {
+        return updateTastingNote(noteId, {
+          title: title.trim(),
+          content: comment.trim(),
+          ...toTastingNotePayload(flavors),
+          images: [...existingImages, ...uploadedImages],
+        });
+      }
 
       return createTastingNote({
         title: title.trim(),
@@ -195,7 +271,7 @@ function TastingNoteWritePageContent() {
     },
     throwOnError: false,
     onError: error => {
-      const message = error instanceof Error ? error.message : '등록 중 문제가 발생했어요.';
+      const message = error instanceof Error ? error.message : '저장 중 문제가 발생했어요.';
       toast.error(message, { duration: 1500 });
     },
   });
@@ -256,7 +332,7 @@ function TastingNoteWritePageContent() {
         return;
       }
 
-      const result = await createNoteMutation.mutateAsync();
+      const result = await saveNoteMutation.mutateAsync();
       saveTastingNoteMeta(result.id, {
         whiskyName: (whisky.name || keyword).trim(),
         tastingDate: normalizeTasteDate(whisky.date),
@@ -269,7 +345,12 @@ function TastingNoteWritePageContent() {
         mode,
         alcoholId: selectedAlcoholId ?? undefined,
       });
-      toast.success('테이스팅 노트를 등록했어요.', { duration: 1200 });
+      if (isEditMode) {
+        await queryClient.invalidateQueries({ queryKey: ['tasting-note'] });
+      }
+      toast.success(isEditMode ? '테이스팅 노트를 수정했어요.' : '테이스팅 노트를 등록했어요.', {
+        duration: 1200,
+      });
       router.push(
         selectedAlcoholId
           ? `/tasting-note/${result.id}?alcoholId=${selectedAlcoholId}`
@@ -281,13 +362,25 @@ function TastingNoteWritePageContent() {
     }
   };
 
+  if (isEditMode && isEditingNoteLoading) {
+    return <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-grey-700">불러오는 중...</div>;
+  }
+
+  if (isEditMode && (isEditingNoteError || !editingNote)) {
+    return (
+      <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-grey-700">
+        테이스팅 노트를 불러오지 못했습니다.
+      </div>
+    );
+  }
+
   return (
     <div className="flex-1">
       <div className="container mx-auto px-6 py-8">
         {/* 뒤로가기 */}
         <div className="mb-6">
           <Link
-            href="/tasting-note"
+            href={isEditMode && noteId ? `/tasting-note/${noteId}` : '/tasting-note'}
             className="flex items-center text-brown-800 hover:text-brown-600 transition-colors"
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
@@ -425,6 +518,8 @@ function TastingNoteWritePageContent() {
               <BeginnerForm
                 images={images}
                 setImages={setImages}
+                existingImages={existingImages}
+                setExistingImages={setExistingImages}
                 whisky={whisky}
                 setWhisky={setWhisky}
                 rating={rating}
@@ -440,6 +535,8 @@ function TastingNoteWritePageContent() {
               <ExpertForm
                 images={images}
                 setImages={setImages}
+                existingImages={existingImages}
+                setExistingImages={setExistingImages}
                 whisky={whisky}
                 setWhisky={setWhisky}
                 rating={rating}
@@ -458,10 +555,16 @@ function TastingNoteWritePageContent() {
           <div className="flex justify-end mt-6">
             <Button
               onClick={handleSubmit}
-              disabled={createNoteMutation.isPending}
+              disabled={saveNoteMutation.isPending}
               className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 py-2 rounded-lg font-medium"
             >
-              {createNoteMutation.isPending ? '등록 중...' : '등록하기'}
+              {saveNoteMutation.isPending
+                ? isEditMode
+                  ? '수정 중...'
+                  : '등록 중...'
+                : isEditMode
+                  ? '수정하기'
+                  : '등록하기'}
             </Button>
           </div>
         </div>
@@ -473,6 +576,8 @@ function TastingNoteWritePageContent() {
 function BeginnerForm(props: {
   images: File[];
   setImages: (f: File[]) => void;
+  existingImages: string[];
+  setExistingImages: (images: string[]) => void;
   whisky: WhiskyMeta;
   setWhisky: (u: WhiskyMeta) => void;
   rating: number;
@@ -487,6 +592,8 @@ function BeginnerForm(props: {
   const {
     images,
     setImages,
+    existingImages,
+    setExistingImages,
     whisky,
     setWhisky,
     rating,
@@ -504,7 +611,13 @@ function BeginnerForm(props: {
       {/* 사진 */}
       <section className="mb-8">
         <h3 className="mb-3 text-sm font-semibold text-brown-800">사진 (최대 3장)</h3>
-        <ImagePicker images={images} onChange={setImages} max={3} />
+        <ImagePicker
+          images={images}
+          onChange={setImages}
+          existingImages={existingImages}
+          onExistingImagesChange={setExistingImages}
+          max={3}
+        />
       </section>
 
       {/* 메타 입력 */}
@@ -567,6 +680,8 @@ function BeginnerForm(props: {
 function ExpertForm(props: {
   images: File[];
   setImages: (f: File[]) => void;
+  existingImages: string[];
+  setExistingImages: (images: string[]) => void;
   whisky: WhiskyMeta;
   setWhisky: (u: WhiskyMeta) => void;
   rating: number;
@@ -581,6 +696,8 @@ function ExpertForm(props: {
   const {
     images,
     setImages,
+    existingImages,
+    setExistingImages,
     whisky,
     setWhisky,
     rating,
@@ -608,7 +725,13 @@ function ExpertForm(props: {
       {/* 사진 */}
       <section className="mb-6">
         <h3 className="mb-3 text-sm font-semibold text-brown-800">사진 (최대 3장)</h3>
-        <ImagePicker images={images} onChange={setImages} max={3} />
+        <ImagePicker
+          images={images}
+          onChange={setImages}
+          existingImages={existingImages}
+          onExistingImagesChange={setExistingImages}
+          max={3}
+        />
       </section>
 
       {/* 메타 + 별점 */}
