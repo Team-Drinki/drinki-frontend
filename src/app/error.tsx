@@ -9,6 +9,14 @@ interface ErrorProps {
 }
 
 export default function Error({ error, reset }: ErrorProps) {
+  const handleRetry = () => {
+    if (typeof window !== 'undefined') {
+      window.location.reload();
+      return;
+    }
+    reset();
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-background">
       <div className="flex flex-col items-center justify-center gap-8 px-4 text-center">
@@ -30,7 +38,7 @@ export default function Error({ error, reset }: ErrorProps) {
             잠시 후 다시 시도해주세요.
           </p>
         </div>
-        <Button onClick={reset} variant="default" size="lg" className="mt-4">
+        <Button onClick={handleRetry} variant="default" size="lg" className="mt-4">
           다시 시도
         </Button>
       </div>

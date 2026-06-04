@@ -7,10 +7,20 @@ export default function ReplySlot({
   postId,
   parentId,
   depth = 0,
+  nickname = '작성자 닉네임',
+  disabled = false,
+  submitLabel = '등록',
+  placeholder = '댓글을 작성해주세요.',
+  onSubmitComment,
 }: {
   postId: string;
   parentId: string | number;
   depth?: number;
+  nickname?: string;
+  disabled?: boolean;
+  submitLabel?: string;
+  placeholder?: string;
+  onSubmitComment?: (content: string) => Promise<void> | void;
 }) {
   if (depth > 0) return null;
 
@@ -56,11 +66,15 @@ export default function ReplySlot({
         </svg>
       </div>
       <CommentForm
-        nickname="작성자 닉네임"
+        nickname={nickname}
         postId={postId}
         parentId={String(parentId)}
         onSubmitted={close}
         onCancel={close}
+        onSubmitComment={onSubmitComment}
+        disabled={disabled}
+        submitLabel={submitLabel}
+        placeholder={placeholder}
         className="flex-1 p-0"
         inputRef={inputRef}
       />

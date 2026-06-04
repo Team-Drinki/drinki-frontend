@@ -15,7 +15,7 @@ export async function getAlcoholDetail(id: number, options?: ApiOptions): Promis
 
 async function fetchAlcoholList(
   path: string,
-  params: Record<string, string | number>
+  params: Record<string, string | number | undefined>
 ): Promise<AlcoholListResponse> {
   const { data } = await apiInstance.get<unknown>(path, { params });
   return alcoholListResponseSchema.parse(data);
@@ -26,6 +26,7 @@ export interface AlcoholListParams {
   size?: number;
   sort?: 'CreatedAt' | 'View' | 'TastingNote' | 'Like' | 'Rating' | 'PriceDesc' | 'PriceAsc';
   query?: string;
+  categoryId?: number;
   category?: string;
   location?: string;
   style?: string;
@@ -34,32 +35,41 @@ export interface AlcoholListParams {
   rating?: number;
 }
 
-const defaultAlcoholListParams: Required<AlcoholListParams> = {
-  page: 1,
-  size: 9,
-  sort: 'CreatedAt',
-  query: '',
-  category: '',
-  location: '',
-  style: '',
-  priceMin: 0,
-  priceMax: 1000000000,
-  rating: 0,
-};
+function mapSortToBackend(sort: AlcoholListParams['sort']): string {
+  switch (sort) {
+    case 'View':
+      return 'viewCnt:desc';
+    case 'Like':
+      return 'wishCnt:desc';
+    case 'Rating':
+      return 'rating:desc';
+    case 'PriceAsc':
+      return 'price:asc';
+    case 'PriceDesc':
+      return 'price:desc';
+    case 'TastingNote':
+      return 'createdAt:desc';
+    case 'CreatedAt':
+    default:
+      return 'createdAt:desc';
+  }
+}
 
 export async function getAlcoholList(params: AlcoholListParams = {}): Promise<AlcoholListResponse> {
-  const merged = { ...defaultAlcoholListParams, ...params };
+  const page = params.page ?? 1;
+  const size = params.size ?? 9;
+  const sort = params.sort ?? 'CreatedAt';
+  const query = params.query?.trim();
+
   return fetchAlcoholList('alcohols/search', {
-    page: merged.page,
-    size: merged.size,
-    sort: merged.sort,
-    query: merged.query,
-    category: merged.category,
-    location: merged.location,
-    style: merged.style,
-    priceMin: merged.priceMin,
-    priceMax: merged.priceMax,
-    rating: merged.rating,
+    page,
+    size,
+    sort: mapSortToBackend(sort),
+    query: query ? query : undefined,
+    categoryId: params.categoryId && params.categoryId > 0 ? params.categoryId : undefined,
+    priceMin: params.priceMin,
+    priceMax: params.priceMax,
+    rating: params.rating,
   });
 }
 

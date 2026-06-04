@@ -196,7 +196,7 @@ export const FLAVOR_GROUPS_EXPERT = [
       {
         name: '배',
         iconSrc: '/images/icon/pear.png',
-        iconActiveSrc: '/images/selectedIcon/paer.png',
+        iconActiveSrc: '/images/selectedIcon/pear.png',
         alt: '배 아이콘 ',
       },
     ],

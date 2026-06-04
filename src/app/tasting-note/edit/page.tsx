@@ -1,3 +1,1 @@
-export default function TastingNoteEditPage() {
-  return <div>TastingNoteEditPage</div>;
-}
+export { default } from '@/app/tasting-note/write/page';

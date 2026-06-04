@@ -85,7 +85,7 @@ export default function CustomTooltip({
           {content ? (
             content
           ) : (
-            <ul className="min-h-10 flex items-center divide-x-1 divide-grey-400">
+            <ul className="min-w-[5.5rem] flex flex-col items-stretch divide-y divide-grey-400">
               {options?.map((opt, i) => (
                 <li key={opt.key ?? i}>
                   <button
@@ -93,7 +93,7 @@ export default function CustomTooltip({
                     disabled={opt.disabled}
                     onClick={() => handleSelect(opt)}
                     className={[
-                      'text-button text-black px-4.5 hover:bg-muted/50 focus:outline-none',
+                      'w-full px-4 py-3 text-left text-button text-black hover:bg-muted/50 focus:outline-none',
                       opt.disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer',
                       opt.className ?? '',
                     ]

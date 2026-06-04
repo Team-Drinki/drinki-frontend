@@ -8,7 +8,8 @@ export const authQueryOptions = queryOptions({
   queryKey: ['auth', 'me'],
   queryFn: getCurrentUser,
   retry: false,
-  staleTime: 5 * 60 * 1000,
-  refetchOnMount: false,
+  // 임시: 마운트마다 인증 재확인
+  staleTime: 0,
+  refetchOnMount: 'always',
   refetchOnWindowFocus: false,
 });

@@ -241,7 +241,13 @@ function ActivityGrid({ items }: { items: ActivityItem[] }) {
         <Link href={item.href} key={item.id}>
           <article className="rounded-xl overflow-hidden border border-grey-200 bg-white hover:shadow-sm transition-shadow">
             <div className="relative h-32 bg-grey-100 md:h-36">
-              <Image src={item.imageUrl} alt={item.title} fill className="object-cover" />
+              <Image
+                src={item.imageUrl || '/images/whisky.png'}
+                alt={item.title}
+                fill
+                unoptimized={/^https?:\/\//.test(item.imageUrl || '')}
+                className="object-cover"
+              />
               <Badge className="absolute right-2 top-2 bg-yellow-main text-black hover:bg-yellow-main">
                 <Heart className="mr-1 size-3.5 fill-black stroke-black" />
                 {item.likes}

@@ -1,7 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ChevronLeft } from 'lucide-react';
@@ -15,16 +18,27 @@ import FlavorGroupCard from '@/components/tasting-note/FlavorGroupCard';
 import { FLAVOR_GROUPS_EXPERT } from '@/components/tasting-note/FlavorGroups';
 import IntensityPopover from '@/components/tasting-note/IntensityPopover';
 import FlavorItem from '@/components/tasting-note/FlavorItem';
-
 import { Search } from 'lucide-react';
 
 import {
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
+import AuthGuard from '@/components/auth/AuthGuard';
+import { getAlcoholDetail } from '@/api/alcohol';
+import { alcoholListQueryOptions } from '@/query/options/alcohol';
+import { createTastingNote, updateTastingNote } from '@/api/tasting-note';
+import type { AlcoholDetail, AlcoholListItem } from '@/schema/api/alcohol';
+import { filesToDataUrls, fromTastingNoteDetail, toTastingNotePayload } from '@/lib/tasting-note';
+import { readTastingNoteMeta, saveTastingNoteMeta } from '@/lib/tasting-note-meta';
+import { tastingNoteDetailQueryOptions } from '@/query/options/tasting-note';
+import {
+  matchesTastingNoteBoardCategory,
+  type TastingNoteBoardCategory,
+} from '@/lib/tasting-note-category';
 
 type WhiskyMeta = {
   name: string;
@@ -35,13 +49,125 @@ type WhiskyMeta = {
   date: string;
 };
 
+function resolveAlcoholType(
+  item: { style?: string; category?: string },
+  fallbackCategory?: string
+) {
+  return item.style?.trim() || item.category?.trim() || fallbackCategory?.trim() || '';
+}
+
+function hydrateWhiskyMeta(
+  fallbackCategory: string,
+  item: AlcoholDetail | AlcoholListItem
+): WhiskyMeta {
+  return applyAlcoholMeta(fallbackCategory, item);
+}
+
+function ensureBoardCategoryAlcohol(
+  alcohol: AlcoholDetail | AlcoholListItem,
+  boardCategory: string
+) {
+  if (!matchesTastingNoteBoardCategory(alcohol.category, boardCategory)) {
+    throw new Error(`${boardCategory} 카테고리에 맞는 술을 선택해주세요.`);
+  }
+}
+
+async function hydrateSelectedAlcohol(alcoholId: number, boardCategory: string) {
+  const detail = await getAlcoholDetail(alcoholId);
+  ensureBoardCategoryAlcohol(detail, boardCategory);
+  return detail;
+}
+
+function normalizeTasteDate(value: string) {
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return new Date().toISOString();
+  }
+
+  if (/^\d{4}\.\d{2}\.\d{2}$/.test(trimmed)) {
+    const normalized = trimmed.replace(/\./g, '-');
+    return new Date(`${normalized}T00:00:00.000Z`).toISOString();
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+    return new Date(`${trimmed}T00:00:00.000Z`).toISOString();
+  }
+
+  const parsed = new Date(trimmed);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed.toISOString();
+  }
+
+  return new Date().toISOString();
+}
+
+function formatTasteDate(value?: string) {
+  if (!value) {
+    return '';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}.${month}.${day}`;
+}
+
+function toBoardCategory(category?: string): TastingNoteBoardCategory {
+  if (category === '위스키' || category === '와인') {
+    return category;
+  }
+
+  return '기타';
+}
+
+function applyAlcoholMeta(
+  fallbackCategory: string,
+  item: {
+    name: string;
+    proof: number;
+    style?: string;
+    category?: string;
+    price: number;
+    location?: string;
+  }
+): WhiskyMeta {
+  return {
+    name: item.name,
+    abv: item.proof ? String(item.proof) : '',
+    type: resolveAlcoholType(item, fallbackCategory),
+    price: item.price ? String(item.price) : '',
+    region: item.location ?? '',
+    date: '',
+  };
+}
+
 export default function TastingNoteWritePage() {
+  return (
+    <AuthGuard>
+      <TastingNoteWritePageContent />
+    </AuthGuard>
+  );
+}
+
+function TastingNoteWritePageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const noteId = Number(searchParams.get('noteId') ?? searchParams.get('id')) || undefined;
+  const queryClient = useQueryClient();
+  const isEditMode = Number.isFinite(noteId) && (noteId ?? 0) > 0;
   const [catOpen, setCatOpen] = useState(false); // ▼/▲ 토글용
   const [images, setImages] = useState<File[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
   const [mode, setMode] = useState<'beginner' | 'expert'>('beginner');
   const [keyword, setKeyword] = useState('');
   const [title, setTitle] = useState('');
-  const [boardCategory, setBoardCategory] = useState('');
+  const [boardCategory, setBoardCategory] = useState<TastingNoteBoardCategory | ''>('');
+  const [selectedAlcoholId, setSelectedAlcoholId] = useState<number | null>(null);
   const [whisky, setWhisky] = useState<WhiskyMeta>({
     name: '',
     abv: '',
@@ -59,20 +185,194 @@ export default function TastingNoteWritePage() {
     Palate: {},
     Finish: {},
   });
+  const [initialized, setInitialized] = useState(!isEditMode);
+  const {
+    data: editingNote,
+    isLoading: isEditingNoteLoading,
+    isError: isEditingNoteError,
+  } = useQuery(tastingNoteDetailQueryOptions(noteId ?? 0));
 
-  const handleSubmit = () => {
-    console.log('tasting-note submit', {
-      mode,
-      keyword,
-      title,
-      whisky,
-      rating,
-      appearance,
-      comment,
-      flavors,
+  useEffect(() => {
+    if (!isEditMode || !editingNote || initialized) {
+      return;
+    }
+
+    const savedMeta = readTastingNoteMeta(editingNote.id);
+    const category = toBoardCategory(editingNote.alcoholCategory);
+    const whiskyName = savedMeta?.whiskyName || editingNote.alcoholName || '';
+
+    setTitle(editingNote.title);
+    setBoardCategory(category);
+    setSelectedAlcoholId(editingNote.alcoholId ?? null);
+    setKeyword(whiskyName);
+    setWhisky({
+      name: whiskyName,
+      abv: savedMeta?.abv ?? '',
+      type: savedMeta?.type || editingNote.alcoholCategory || category,
+      price: savedMeta?.price ?? '',
+      region: savedMeta?.region ?? '',
+      date: formatTasteDate(savedMeta?.tastingDate || editingNote.createdAt),
     });
-    alert('임시 저장: 콘솔에서 제출 페이로드 확인 가능');
+    setRating(savedMeta?.rating ?? 0);
+    setAppearance(savedMeta?.appearance ?? null);
+    setMode(savedMeta?.mode ?? 'beginner');
+    setComment(editingNote.content ?? '');
+    setFlavors(fromTastingNoteDetail(editingNote));
+    setExistingImages(editingNote.images);
+    setImages([]);
+    setInitialized(true);
+  }, [editingNote, initialized, isEditMode]);
+
+  const alcoholSearchQuery = useMemo(
+    () =>
+      alcoholListQueryOptions({
+        page: 1,
+        size: 5,
+        query: keyword.trim(),
+        category: boardCategory,
+      }),
+    [boardCategory, keyword]
+  );
+
+  const { data: alcoholSearchResult, isFetching: isAlcoholSearching } = useQuery({
+    ...alcoholSearchQuery,
+    enabled: keyword.trim().length > 0,
+  });
+
+  const saveNoteMutation = useMutation({
+    mutationFn: async () => {
+      const customAlcoholName = (whisky.name || keyword).trim();
+      const uploadedImages = await filesToDataUrls(images);
+
+      if (isEditMode && noteId) {
+        return updateTastingNote(noteId, {
+          title: title.trim(),
+          content: comment.trim(),
+          ...toTastingNotePayload(flavors),
+          images: [...existingImages, ...uploadedImages],
+        });
+      }
+
+      return createTastingNote({
+        title: title.trim(),
+        content: comment.trim(),
+        ...(selectedAlcoholId
+          ? { alcoholId: selectedAlcoholId }
+          : {
+              customAlcohol: {
+                name: customAlcoholName,
+                category: boardCategory,
+              },
+        }),
+        createdTime: normalizeTasteDate(whisky.date),
+        ...toTastingNotePayload(flavors),
+        images: uploadedImages,
+      });
+    },
+    throwOnError: false,
+    onError: error => {
+      const message = error instanceof Error ? error.message : '저장 중 문제가 발생했어요.';
+      toast.error(message, { duration: 1500 });
+    },
+  });
+
+  const searchItems = (alcoholSearchResult?.items ?? []).filter(item =>
+    matchesTastingNoteBoardCategory(item.category, boardCategory)
+  );
+
+  const handleSelectAlcohol = async (item: AlcoholListItem) => {
+    setSelectedAlcoholId(item.id);
+    setKeyword(item.name);
+    setWhisky(prev => ({ ...prev, ...hydrateWhiskyMeta(boardCategory, item), date: prev.date }));
+
+    try {
+      const detail = await hydrateSelectedAlcohol(item.id, boardCategory);
+      setWhisky(prev => ({
+        ...prev,
+        name: detail.name,
+        abv: detail.proof ? String(detail.proof) : '',
+        type: resolveAlcoholType(detail, boardCategory),
+        price: detail.price ? String(detail.price) : '',
+        region: detail.location ?? '',
+      }));
+    } catch {
+      // Keep search-result values when detail hydration fails.
+    }
   };
+
+  const handleCategoryChange = (nextCategory: TastingNoteBoardCategory) => {
+    setBoardCategory(nextCategory);
+    setSelectedAlcoholId(null);
+  };
+
+  const handleSubmit = async () => {
+    if (!boardCategory) {
+      toast.info('게시판 주제를 선택해주세요.', { duration: 1200 });
+      return;
+    }
+
+    if (!title.trim()) {
+      toast.info('제목을 입력해주세요.', { duration: 1200 });
+      return;
+    }
+
+    if (
+      Object.keys(flavors.Aroma).length === 0 &&
+      Object.keys(flavors.Palate).length === 0 &&
+      Object.keys(flavors.Finish).length === 0
+    ) {
+      toast.info('최소 한 개 이상의 향미를 선택해주세요.', { duration: 1200 });
+      return;
+    }
+
+    try {
+      const customAlcoholName = (whisky.name || keyword).trim();
+      if (!selectedAlcoholId && !customAlcoholName) {
+        toast.info('술 이름을 입력해주세요.', { duration: 1200 });
+        return;
+      }
+
+      const result = await saveNoteMutation.mutateAsync();
+      saveTastingNoteMeta(result.id, {
+        whiskyName: (whisky.name || keyword).trim(),
+        tastingDate: normalizeTasteDate(whisky.date),
+        abv: whisky.abv.trim(),
+        type: whisky.type.trim() || boardCategory.trim(),
+        price: whisky.price.trim(),
+        region: whisky.region.trim(),
+        rating,
+        appearance,
+        mode,
+        alcoholId: selectedAlcoholId ?? undefined,
+      });
+      if (isEditMode) {
+        await queryClient.invalidateQueries({ queryKey: ['tasting-note'] });
+      }
+      toast.success(isEditMode ? '테이스팅 노트를 수정했어요.' : '테이스팅 노트를 등록했어요.', {
+        duration: 1200,
+      });
+      router.push(
+        selectedAlcoholId
+          ? `/tasting-note/${result.id}?alcoholId=${selectedAlcoholId}`
+          : `/tasting-note/${result.id}`
+      );
+    } catch (error) {
+      const message = error instanceof Error ? error.message : '술 정보를 확인하지 못했어요.';
+      toast.info(message, { duration: 1500 });
+    }
+  };
+
+  if (isEditMode && isEditingNoteLoading) {
+    return <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-grey-700">불러오는 중...</div>;
+  }
+
+  if (isEditMode && (isEditingNoteError || !editingNote)) {
+    return (
+      <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-grey-700">
+        테이스팅 노트를 불러오지 못했습니다.
+      </div>
+    );
+  }
 
   return (
     <div className="flex-1">
@@ -80,7 +380,7 @@ export default function TastingNoteWritePage() {
         {/* 뒤로가기 */}
         <div className="mb-6">
           <Link
-            href="/tasting-note"
+            href={isEditMode && noteId ? `/tasting-note/${noteId}` : '/tasting-note'}
             className="flex items-center text-brown-800 hover:text-brown-600 transition-colors"
           >
             <ChevronLeft className="w-5 h-5 mr-1" />
@@ -95,8 +395,10 @@ export default function TastingNoteWritePage() {
               {/* 드롭다운 (게시판 주제 선택) */}
               <div className="col-span-12">
                 <Select
-                  value={boardCategory || undefined}
-                  onValueChange={v => setBoardCategory(v)}
+                  value={boardCategory}
+                  onValueChange={v => {
+                    handleCategoryChange(v as TastingNoteBoardCategory);
+                  }}
                   onOpenChange={setCatOpen}
                 >
                   <SelectTrigger
@@ -126,13 +428,46 @@ export default function TastingNoteWritePage() {
                 </label>
                 <div className="relative">
                   <Input
-                    placeholder="술 이름을 검색해주세요 (아직 미구현)"
+                    placeholder="술 이름을 검색해주세요"
                     value={keyword}
-                    onChange={e => setKeyword(e.target.value)}
+                    onChange={e => {
+                      setKeyword(e.target.value);
+                      setSelectedAlcoholId(null);
+                      setWhisky(prev => ({ ...prev, name: e.target.value }));
+                    }}
                     className="w-full bg-white border-brown-200 focus:border-brown-400 pr-10"
                   />
                   <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-brown-700" />
                 </div>
+                {keyword.trim().length > 0 && (
+                  <div className="mt-2 rounded-lg border border-brown-100 bg-white p-2 shadow-sm">
+                    {isAlcoholSearching ? (
+                      <p className="px-2 py-1 text-sm text-brown-700">검색 중...</p>
+                    ) : searchItems.length > 0 ? (
+                      <div className="flex flex-col">
+                        {searchItems.map(item => (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => handleSelectAlcohol(item)}
+                            className={`rounded-md px-3 py-2 text-left text-sm transition hover:bg-yellow-100 ${
+                              selectedAlcoholId === item.id
+                                ? 'bg-yellow-100 text-brown-900'
+                                : 'text-brown-800'
+                            }`}
+                          >
+                            {item.name}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="px-2 py-1 text-sm text-brown-700">검색 결과가 없습니다.</p>
+                    )}
+                  </div>
+                )}
+                <p className="mt-2 text-xs text-brown-700">
+                  beta 버전에서는 검색 결과를 선택하거나 직접 입력할 수 있어요.
+                </p>
               </div>
 
               {/* 제목: 전체폭 */}
@@ -183,6 +518,8 @@ export default function TastingNoteWritePage() {
               <BeginnerForm
                 images={images}
                 setImages={setImages}
+                existingImages={existingImages}
+                setExistingImages={setExistingImages}
                 whisky={whisky}
                 setWhisky={setWhisky}
                 rating={rating}
@@ -198,6 +535,8 @@ export default function TastingNoteWritePage() {
               <ExpertForm
                 images={images}
                 setImages={setImages}
+                existingImages={existingImages}
+                setExistingImages={setExistingImages}
                 whisky={whisky}
                 setWhisky={setWhisky}
                 rating={rating}
@@ -216,9 +555,16 @@ export default function TastingNoteWritePage() {
           <div className="flex justify-end mt-6">
             <Button
               onClick={handleSubmit}
+              disabled={saveNoteMutation.isPending}
               className="bg-gray-300 hover:bg-gray-400 text-gray-700 px-8 py-2 rounded-lg font-medium"
             >
-              등록하기
+              {saveNoteMutation.isPending
+                ? isEditMode
+                  ? '수정 중...'
+                  : '등록 중...'
+                : isEditMode
+                  ? '수정하기'
+                  : '등록하기'}
             </Button>
           </div>
         </div>
@@ -230,6 +576,8 @@ export default function TastingNoteWritePage() {
 function BeginnerForm(props: {
   images: File[];
   setImages: (f: File[]) => void;
+  existingImages: string[];
+  setExistingImages: (images: string[]) => void;
   whisky: WhiskyMeta;
   setWhisky: (u: WhiskyMeta) => void;
   rating: number;
@@ -244,6 +592,8 @@ function BeginnerForm(props: {
   const {
     images,
     setImages,
+    existingImages,
+    setExistingImages,
     whisky,
     setWhisky,
     rating,
@@ -261,7 +611,13 @@ function BeginnerForm(props: {
       {/* 사진 */}
       <section className="mb-8">
         <h3 className="mb-3 text-sm font-semibold text-brown-800">사진 (최대 3장)</h3>
-        <ImagePicker images={images} onChange={setImages} max={3} />
+        <ImagePicker
+          images={images}
+          onChange={setImages}
+          existingImages={existingImages}
+          onExistingImagesChange={setExistingImages}
+          max={3}
+        />
       </section>
 
       {/* 메타 입력 */}
@@ -271,7 +627,7 @@ function BeginnerForm(props: {
           value={whisky.name}
           onChange={v => setWhisky({ ...whisky, name: v })}
         />
-        <Field
+        <DateField
           label="시음 날짜"
           value={whisky.date}
           onChange={v => setWhisky({ ...whisky, date: v })}
@@ -324,6 +680,8 @@ function BeginnerForm(props: {
 function ExpertForm(props: {
   images: File[];
   setImages: (f: File[]) => void;
+  existingImages: string[];
+  setExistingImages: (images: string[]) => void;
   whisky: WhiskyMeta;
   setWhisky: (u: WhiskyMeta) => void;
   rating: number;
@@ -338,6 +696,8 @@ function ExpertForm(props: {
   const {
     images,
     setImages,
+    existingImages,
+    setExistingImages,
     whisky,
     setWhisky,
     rating,
@@ -365,7 +725,13 @@ function ExpertForm(props: {
       {/* 사진 */}
       <section className="mb-6">
         <h3 className="mb-3 text-sm font-semibold text-brown-800">사진 (최대 3장)</h3>
-        <ImagePicker images={images} onChange={setImages} max={3} />
+        <ImagePicker
+          images={images}
+          onChange={setImages}
+          existingImages={existingImages}
+          onExistingImagesChange={setExistingImages}
+          max={3}
+        />
       </section>
 
       {/* 메타 + 별점 */}
@@ -375,7 +741,7 @@ function ExpertForm(props: {
           value={whisky.name}
           onChange={v => setWhisky({ ...whisky, name: v })}
         />
-        <Field
+        <DateField
           label="시음 날짜"
           value={whisky.date}
           onChange={v => setWhisky({ ...whisky, date: v })}
@@ -512,6 +878,47 @@ function Field({
       <Input
         value={value}
         onChange={e => onChange(e.target.value)}
+        className="w-full bg-white border-gray-300"
+      />
+    </div>
+  );
+}
+
+function DateField({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const handleChange = (nextValue: string) => {
+    const digits = nextValue.replace(/\D/g, '').slice(0, 8);
+
+    if (digits.length <= 4) {
+      onChange(digits);
+      return;
+    }
+
+    if (digits.length <= 6) {
+      onChange(`${digits.slice(0, 4)}.${digits.slice(4)}`);
+      return;
+    }
+
+    onChange(`${digits.slice(0, 4)}.${digits.slice(4, 6)}.${digits.slice(6)}`);
+  };
+
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-semibold text-brown-800">{label}</label>
+      <Input
+        type="text"
+        value={value}
+        onChange={e => handleChange(e.target.value)}
+        placeholder="YYYY.MM.DD"
+        inputMode="numeric"
+        maxLength={10}
         className="w-full bg-white border-gray-300"
       />
     </div>

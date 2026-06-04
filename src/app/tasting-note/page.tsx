@@ -7,14 +7,15 @@ import { useQuery } from '@tanstack/react-query';
 import DrinkCard from '@/components/common/DrinkCard';
 import PostsPagination from '@/components/common/PostsPagination';
 import Searchbar from '@/components/common/Searchbar';
-import { alcoholListQueryOptions } from '@/query/options/alcohol';
 import AuthGuard from '@/components/auth/AuthGuard';
 import CustomButton from '@/components/common/CustomButton';
-import type { AlcoholLabel } from '@/constants/enum/alcoholType';
+import { tastingNoteListQueryOptions } from '@/query/options/tasting-note';
+import {
+  matchesTastingNoteBoardCategory,
+  type TastingNoteBoardCategory,
+} from '@/lib/tasting-note-category';
 
-type TastingNoteCategory = AlcoholLabel;
-
-const CATEGORY_BUTTONS: { label: string; value: TastingNoteCategory }[] = [
+const CATEGORY_BUTTONS: { label: string; value: TastingNoteBoardCategory }[] = [
   { label: '위스키', value: '위스키' },
   { label: '와인', value: '와인' },
   { label: '기타', value: '기타' },
@@ -31,14 +32,14 @@ export default function TastingNotePage() {
 function TastingNotePageContent() {
   const [currentPage, setCurrentPage] = useState(1);
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<TastingNoteCategory>('위스키');
+  const [selectedCategory, setSelectedCategory] = useState<TastingNoteBoardCategory>('위스키');
 
   const queryOptions = useMemo(
     () =>
-      alcoholListQueryOptions({
+      tastingNoteListQueryOptions({
         page: currentPage,
         size: 9,
-        sort: 'TastingNote',
+        sort: 'createdAt',
         query,
         category: selectedCategory,
       }),
@@ -46,7 +47,13 @@ function TastingNotePageContent() {
   );
 
   const { data, isLoading, isError } = useQuery(queryOptions);
-  const items = data?.items ?? [];
+  const items = useMemo(
+    () =>
+      (data?.notes ?? []).filter(item =>
+        matchesTastingNoteBoardCategory(item.alcoholCategory, selectedCategory)
+      ),
+    [data?.notes, selectedCategory]
+  );
   const totalPages = data?.pageUtil.totalPages ?? 1;
 
   return (
@@ -115,13 +122,13 @@ function TastingNotePageContent() {
               {items.map(item => (
                 <Link href={`/tasting-note/${item.id}`} key={item.id}>
                   <DrinkCard
-                    title={item.name}
-                    author={item.category}
-                    imageUrl={item.image ?? '/images/whisky.png'}
+                    title={item.title}
+                    author={item.writer}
+                    imageUrl={item.imageUrl ?? '/images/whisky.png'}
                     avatarUrl="/images/avatar.png"
-                    likes={item.wish}
-                    views={item.viewCnt}
-                    comments={item.noteCnt}
+                    likes={item.likeCount}
+                    views={item.viewCount}
+                    comments={item.commentCount}
                   />
                 </Link>
               ))}

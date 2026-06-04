@@ -54,21 +54,27 @@ export type PostDetailResponse = {
 export type PostListItem = {
   id: string | number;
   title: string;
-  author?: string;
+  author: PostAuthor;
   imageUrl?: string;
-  avatarUrl?: string;
-  likes?: number;
-  views?: number;
-  comments?: number;
-  category?: PostCategory;
-  createdAt?: string;
+  category: string;
+  body: string;
+  viewCnt: number;
+  likeCnt: number;
+  commentCnt: number;
+  isLiked: boolean;
+  createdAt: string;
+  updatedAt: string;
 };
 
 // postListResponse 대응 타입
 export type PostListResponse = {
   items: PostListItem[];
-  totalPages?: number;
-  totalElements?: number;
+  pageUtil?: {
+    page: number;
+    size: number;
+    total: number;
+    totalPages: number;
+  };
 };
 
 // postListRequest 대응 타입
@@ -79,8 +85,15 @@ export type ListPostsParams = {
   sort?: string;
 };
 
+export type TogglePostLikeResponse = {
+  isLiked: boolean;
+};
+
 //write/edit 페이지에서 동일한 에러 메시지를 쓰기 위한 공통 변환 함수.
-export async function toApiErrorMessage(error: unknown, fallback = '알 수 없는 오류가 발생했습니다.') {
+export async function toApiErrorMessage(
+  error: unknown,
+  fallback = '알 수 없는 오류가 발생했습니다.'
+) {
   if (axios.isAxiosError(error)) {
     const status = error.response?.status ?? 0;
     let message = `요청 실패 (${status})`;
@@ -100,7 +113,7 @@ export async function toApiErrorMessage(error: unknown, fallback = '알 수 없�
   return fallback;
 }
 
-// 개발용 x-dev-user-id 
+// 개발용 x-dev-user-id
 function withDevAuthHeader() {
   //기존 write/edit에 있던 개발용 x-dev-user-id 헤더를 공통 API 계층으로 이동.
   if (process.env.NODE_ENV === 'production') {
@@ -110,9 +123,7 @@ function withDevAuthHeader() {
   return { 'x-dev-user-id': '1' };
 }
 
-export const createPost = async (
-  payload: CreatePostPayload,
-): Promise<CreatePostResponse> => {
+export const createPost = async (payload: CreatePostPayload): Promise<CreatePostResponse> => {
   // POST /api/v1/posts
   const { data } = await apiInstance.post<CreatePostResponse>('posts', payload, {
     headers: withDevAuthHeader(),
@@ -130,7 +141,7 @@ export const getPostById = async (postId: string | number): Promise<PostDetailRe
 
 export const updatePost = async (
   postId: string | number,
-  payload: UpdatePostPayload,
+  payload: UpdatePostPayload
 ): Promise<PostDetailResponse> => {
   // PUT /api/v1/posts/:postId
   const { data } = await apiInstance.put<PostDetailResponse>(`posts/${postId}`, payload, {
@@ -155,4 +166,11 @@ export const deletePost = async (postId: string | number): Promise<void> => {
   await apiInstance.delete(`posts/${postId}`, {
     headers: withDevAuthHeader(),
   });
+};
+
+export const togglePostLike = async (postId: string | number): Promise<TogglePostLikeResponse> => {
+  const { data } = await apiInstance.post<TogglePostLikeResponse>(`posts/${postId}/like`, null, {
+    headers: withDevAuthHeader(),
+  });
+  return data;
 };
