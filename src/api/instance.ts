@@ -15,8 +15,11 @@ apiInstance.interceptors.response.use(
     const response = error.response;
     if (response && response.data) {
       const parsed = apiErrorSchema.safeParse(response.data);
-      if (parsed.success && parsed.data.message) {
-        error.message = parsed.data.message;
+      if (parsed.success) {
+        const message = parsed.data.message || parsed.data.error;
+        if (message) {
+          error.message = message;
+        }
       }
     }
     return Promise.reject(error);

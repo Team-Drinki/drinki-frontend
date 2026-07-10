@@ -1,8 +1,9 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { tastingNotes, communityPosts } from './mockup';
+import { communityPosts } from './mockup';
 import Title from '@/components/common/Title';
 import DrinkCard from '@/components/common/DrinkCard';
 import { HotCommunityPostCard } from '@/components/common/HotCommunityPostCard';
@@ -20,7 +21,7 @@ export default function Home() {
 function HomeContent() {
   const { data } = useQuery(homeHotContentQueryOptions);
 
-  const hotTastingNotes = data?.hotTastingNotes?.length ? data.hotTastingNotes : tastingNotes;
+  const hotTastingNotes = data?.hotTastingNotes ?? [];
   const hotCommunityPosts = data?.hotCommunityPosts?.length ? data.hotCommunityPosts : communityPosts;
 
   return (
@@ -29,7 +30,7 @@ function HomeContent() {
         <div className="mx-auto w-full max-w-[1200px]">
           <div className="relative w-full aspect-[16/6] min-h-[180px] max-h-[420px] overflow-hidden">
             <Image
-              src="/images/main-banner.png"
+              src="/images/main-hero-banner.png"
               alt="Main Banner"
               fill
               className="object-cover object-center"
@@ -46,16 +47,22 @@ function HomeContent() {
           <div className="overflow-x-auto bg-grey-100 px-4 py-6 scrollbar-hide md:px-6">
             <div className="flex flex-row gap-6 w-max px-1">
               {hotTastingNotes.map(note => (
-                <DrinkCard
+                <Link
                   key={note.id}
-                  title={note.title}
-                  author={note.author}
-                  imageUrl={note.imageUrl}
-                  avatarUrl={note.avatarUrl}
-                  likes={note.likes}
-                  views={note.views}
-                  comments={note.comments}
-                />
+                  href={`/tasting-note/${note.id}`}
+                  aria-label={`${note.title} 테이스팅 노트 보기`}
+                  className="block w-[17rem] shrink-0 sm:w-[19rem]"
+                >
+                  <DrinkCard
+                    title={note.title}
+                    author={note.author}
+                    imageUrl={note.imageUrl}
+                    avatarUrl={note.avatarUrl}
+                    likes={note.likes}
+                    views={note.views}
+                    comments={note.comments}
+                  />
+                </Link>
               ))}
             </div>
           </div>

@@ -72,6 +72,7 @@ function TastingNoteCommentTree({
       const message = error instanceof Error ? error.message : '댓글 등록에 실패했어요.';
       toast.error(message, { duration: 1500 });
     },
+    throwOnError: false,
   });
 
   const toggleNoteLikeMutation = useMutation({
@@ -87,6 +88,7 @@ function TastingNoteCommentTree({
       const message = error instanceof Error ? error.message : '좋아요 처리에 실패했어요.';
       toast.error(message, { duration: 1500 });
     },
+    throwOnError: false,
   });
 
   const toggleCommentLikeMutation = useMutation({
@@ -100,6 +102,7 @@ function TastingNoteCommentTree({
       const message = error instanceof Error ? error.message : '댓글 좋아요 처리에 실패했어요.';
       toast.error(message, { duration: 1500 });
     },
+    throwOnError: false,
   });
 
   const handleCreateComment = async (content: string, parentId: number | null = null) => {
