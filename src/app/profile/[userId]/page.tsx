@@ -5,8 +5,12 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import ProfileSidebarCard from '@/components/profile/ProfileSidebarCard';
+import DrinkCard from '@/components/common/DrinkCard';
 import { Card, CardContent } from '@/components/ui/card';
-import { publicProfileQueryOptions } from '@/query/options/user';
+import {
+  publicProfileQueryOptions,
+  userTastingNotesQueryOptions,
+} from '@/query/options/user';
 import { ChevronRight } from 'lucide-react';
 
 export default function PublicProfilePage() {
@@ -17,6 +21,11 @@ export default function PublicProfilePage() {
     ...queryOptions,
     enabled: Number.isFinite(userId) && userId > 0,
   });
+  const {
+    data: tastingNotes,
+    isLoading: isNotesLoading,
+    isError: isNotesError,
+  } = useQuery(userTastingNotesQueryOptions(userId, profile?.nickname));
 
   return (
     <main className="min-h-[calc(100vh-8rem)] bg-grey-100 px-4 py-6 md:px-8 md:py-10 lg:px-20">
@@ -30,12 +39,28 @@ export default function PublicProfilePage() {
 
           <div className="space-y-4 md:space-y-5">
             <ProfileSection title="Tasting Note" moreHref="/tasting-note">
-              {isError ? (
+              {isLoading || isNotesLoading ? (
+                <p className="text-body3 text-grey-700">테이스팅 노트를 불러오는 중...</p>
+              ) : isError || isNotesError ? (
                 <p className="text-body3 text-grey-700">프로필 정보를 불러오지 못했어요.</p>
+              ) : tastingNotes && tastingNotes.items.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                  {tastingNotes.items.map(note => (
+                    <Link href={`/tasting-note/${note.id}`} key={note.id}>
+                      <DrinkCard
+                        title={note.title}
+                        author={note.author}
+                        imageUrl={note.imageUrl ?? '/images/whisky.png'}
+                        avatarUrl={profile?.profileImageUrl ?? undefined}
+                        likes={note.likes}
+                        views={note.views}
+                        comments={note.comments}
+                      />
+                    </Link>
+                  ))}
+                </div>
               ) : (
-                <p className="text-body3 text-grey-700">
-                  {profile ? `${profile.nickname}님의 활동 목록이 여기에 들어갈 예정이에요.` : '프로필을 불러오는 중...'}
-                </p>
+                <p className="text-body3 text-grey-700">작성한 테이스팅 노트가 없습니다.</p>
               )}
             </ProfileSection>
 

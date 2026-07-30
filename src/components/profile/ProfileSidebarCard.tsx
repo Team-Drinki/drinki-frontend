@@ -88,9 +88,11 @@ export default function ProfileSidebarCard(props: Props) {
             ) : (
               <Button
                 type="button"
+                disabled
                 className="h-12 min-w-40 rounded-xl bg-yellow-main px-8 text-[1.1rem] font-semibold text-black hover:bg-yellow-500"
+                title="팔로우 기능은 준비 중입니다."
               >
-                팔로우
+                팔로우 준비 중
               </Button>
             )}
           </div>

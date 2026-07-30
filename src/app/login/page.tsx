@@ -1,4 +1,7 @@
+'use client';
+
 import GoogleLogo from '@/components/svg/GoogleLogo';
+import { saveAgeVerification } from '@/lib/age-verification';
 
 export default function LoginPage() {
   const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -10,6 +13,7 @@ export default function LoginPage() {
       <div className="w-full max-w-xs flex flex-col gap-5">
         <a
           href={googleLoginUrl}
+          onClick={saveAgeVerification}
           className="relative flex justify-center items-center w-80 h-10 rounded-lg font-semibold bg-[#F2F2F2] hover:bg-[#e0e0e0]"
         >
           <span className="absolute left-3">
