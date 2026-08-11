@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "eslint src next.config.ts eslint.config.mjs postcss.config.mjs",
+    "lint:fix": "eslint src next.config.ts eslint.config.mjs postcss.config.mjs --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.1.1",

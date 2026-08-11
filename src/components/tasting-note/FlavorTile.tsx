@@ -20,7 +20,7 @@ export default function FlavorTile({
   active = true,
   className,
 }: Props) {
-  const src = active ? iconActiveSrc ?? iconSrc : iconSrc;
+  const src = active ? (iconActiveSrc ?? iconSrc) : iconSrc;
 
   return (
     <div className={['relative flex flex-col items-center', className ?? ''].join(' ')}>

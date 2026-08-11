@@ -2,6 +2,7 @@
 
 import { useIsMobile } from '@/hooks/use-mobile';
 import Link from 'next/link';
+import Image from 'next/image';
 
 const FOOTER_LINKS = {
   team: 'https://app.notion.com/p/3ad39f121a5c8077a1dbe762194111e6?source=copy_link',
@@ -32,10 +33,12 @@ export default function Footer({ compact = false }: FooterProps) {
           className={compact ? 'px-2' : 'px-2 py-2'}
           style={{ backgroundColor: '#E6D3C2' }}
         >
-          <img
+          <Image
             src="/logo/drinki-logo.png"
             alt="Drinki 로고"
-            className={compact ? 'w-16' : 'w-20'}
+            width={160}
+            height={80}
+            className={compact ? 'h-auto w-16' : 'h-auto w-20'}
           />
         </Link>
 
@@ -90,7 +93,13 @@ export default function Footer({ compact = false }: FooterProps) {
         className={compact ? 'px-4 py-2' : 'px-8 py-12'}
         style={{ backgroundColor: '#E6D3C2' }}
       >
-        <img src="/logo/drinki-logo.png" alt="Drinki 로고" className={compact ? 'w-24' : 'w-36'} />
+        <Image
+          src="/logo/drinki-logo.png"
+          alt="Drinki 로고"
+          width={288}
+          height={144}
+          className={compact ? 'h-auto w-24' : 'h-auto w-36'}
+        />
       </Link>
 
       <div className="flex flex-col items-end">

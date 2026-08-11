@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Button } from '../../ui/button';
 import { drinkCategories } from './const';
@@ -39,11 +40,14 @@ export function Navibar() {
     <nav className="sticky top-0 z-50 h-20 w-full bg-white md:h-32">
       <div className="container mx-auto flex h-full items-center justify-between px-4 py-3 md:px-6 md:py-4">
         <div className="flex min-w-0 flex-1 flex-row items-center justify-start">
-          <Link href="/">
-            <img
+          <Link href="/home">
+            <Image
               src="/logo/drinki-logo.png"
               alt="Drinki 로고"
-              className="w-22 rounded-xl transition hover:opacity-80 md:w-36"
+              width={288}
+              height={144}
+              priority
+              className="h-auto w-22 rounded-xl transition hover:opacity-80 md:w-36"
             />
           </Link>
           <div className="ml-3 flex w-full min-w-0 flex-row items-center justify-start text-brown-800 md:ml-10">

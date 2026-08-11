@@ -10,6 +10,7 @@ export default function PostTitle({
   authorNickname,
   createdAt,
   views,
+  isOwner,
 }: {
   id: string;
   boardType: string;
@@ -18,9 +19,8 @@ export default function PostTitle({
   authorNickname: string;
   createdAt: string;
   views: number;
+  isOwner: boolean;
 }) {
-  const currentUserId = '1'; // 더보기 메뉴 테스트용 임시 유저 아이디
-
   return (
     <div className="flex flex-col align-start gap-2.5">
       <h6 className="text-head6 text-sub-1">{boardType}</h6>
@@ -46,7 +46,7 @@ export default function PostTitle({
               <dt className="text-head6">조회수</dt>
               <dd className="text-body2">{views}</dd>
             </div>
-            <PostActionMenu postId={id} isOwner={id === currentUserId} />
+            <PostActionMenu postId={id} isOwner={isOwner} />
           </dl>
         </div>
       </div>

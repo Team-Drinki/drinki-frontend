@@ -16,7 +16,6 @@ import FlavorSelector, {
 } from '@/components/tasting-note/FlavorSelector';
 import FlavorGroupCard from '@/components/tasting-note/FlavorGroupCard';
 import { FLAVOR_GROUPS_EXPERT } from '@/components/tasting-note/FlavorGroups';
-import IntensityPopover from '@/components/tasting-note/IntensityPopover';
 import FlavorItem from '@/components/tasting-note/FlavorItem';
 import { Search } from 'lucide-react';
 
@@ -263,7 +262,7 @@ function TastingNoteWritePageContent() {
                 name: customAlcoholName,
                 category: boardCategory,
               },
-        }),
+            }),
         createdTime: normalizeTasteDate(whisky.date),
         ...toTastingNotePayload(flavors),
         images: uploadedImages,
@@ -363,7 +362,9 @@ function TastingNoteWritePageContent() {
   };
 
   if (isEditMode && isEditingNoteLoading) {
-    return <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-grey-700">불러오는 중...</div>;
+    return (
+      <div className="mx-auto max-w-5xl px-6 py-10 text-body1 text-grey-700">불러오는 중...</div>
+    );
   }
 
   if (isEditMode && (isEditingNoteError || !editingNote)) {
@@ -622,11 +623,7 @@ function BeginnerForm(props: {
 
       {/* 메타 입력 */}
       <section className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-        <Field
-          label="위스키 이름"
-          value={whisky.name}
-          onChange={v => setWhisky({ ...whisky, name: v })}
-        />
+        <Field label="이름" value={whisky.name} onChange={v => setWhisky({ ...whisky, name: v })} />
         <DateField
           label="시음 날짜"
           value={whisky.date}
@@ -925,7 +922,7 @@ function DateField({
   );
 }
 
-function ExpertFlavorItem({
+/* function ExpertFlavorItem({
   label,
   score,
   onChange,
@@ -991,4 +988,4 @@ function ExpertFlavorItem({
       {Tile}
     </IntensityPopover>
   );
-}
+} */

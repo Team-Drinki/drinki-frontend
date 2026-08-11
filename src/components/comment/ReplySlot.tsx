@@ -1,7 +1,20 @@
 'use client';
-import { useReplyComposer } from './ReplyComposerContext';
-import CommentForm from './CommentForm';
+
 import { useEffect, useRef } from 'react';
+
+import CommentForm from './CommentForm';
+import { useReplyComposer } from './ReplyComposerContext';
+
+interface ReplySlotProps {
+  postId: string;
+  parentId: string | number;
+  depth?: number;
+  nickname?: string;
+  disabled?: boolean;
+  submitLabel?: string;
+  placeholder?: string;
+  onSubmitComment?: (content: string) => Promise<void> | void;
+}
 
 export default function ReplySlot({
   postId,
@@ -12,50 +25,58 @@ export default function ReplySlot({
   submitLabel = '등록',
   placeholder = '댓글을 작성해주세요.',
   onSubmitComment,
-}: {
-  postId: string;
-  parentId: string | number;
-  depth?: number;
-  nickname?: string;
-  disabled?: boolean;
-  submitLabel?: string;
-  placeholder?: string;
-  onSubmitComment?: (content: string) => Promise<void> | void;
-}) {
-  if (depth > 0) return null;
-
+}: ReplySlotProps) {
   const { openId, close } = useReplyComposer();
-  const isOpenHere = String(openId) === String(parentId);
 
   const anchorRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
-  useEffect(() => {
-    if (!isOpenHere) return;
-    const el = anchorRef.current;
-    if (!el) return;
+  const isTopLevelComment = depth === 0;
+  const isOpenHere = isTopLevelComment && String(openId) === String(parentId);
 
-    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    requestAnimationFrame(() => {
+  useEffect(() => {
+    if (!isOpenHere) {
+      return;
+    }
+
+    const anchorElement = anchorRef.current;
+
+    if (!anchorElement) {
+      return;
+    }
+
+    anchorElement.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    });
+
+    const animationFrameId = requestAnimationFrame(() => {
       inputRef.current?.focus();
     });
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
   }, [isOpenHere]);
-  if (!isOpenHere) return null;
+
+  if (!isTopLevelComment || !isOpenHere) {
+    return null;
+  }
 
   return (
     <div
-      className="flex gap-4.5 py-6 border-t-1 border-grey-400 scroll-mt-6"
-      ref={anchorRef}
       id={`reply-slot-${parentId}`}
+      ref={anchorRef}
+      className="flex scroll-mt-6 gap-4.5 border-t-1 border-grey-400 py-6"
     >
-      {/* 대댓글 기호 */}
-      <div className="pl-3 ">
+      <div className="pl-3">
         <svg
           width="22"
           height="22"
           viewBox="0 0 22 22"
           fill="none"
           xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
         >
           <path
             d="M1 1V13C1 17.4183 4.58172 21 9 21H21"
@@ -65,6 +86,7 @@ export default function ReplySlot({
           />
         </svg>
       </div>
+
       <CommentForm
         nickname={nickname}
         postId={postId}

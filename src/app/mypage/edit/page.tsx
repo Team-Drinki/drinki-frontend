@@ -55,9 +55,9 @@ function MyProfileEditContent() {
     return null;
   }, [trimmedNickname]);
 
-  const hasChanges = !!profile && (
-    trimmedNickname !== profile.nickname || profileImageUrl !== profile.profileImageUrl
-  );
+  const hasChanges =
+    !!profile &&
+    (trimmedNickname !== profile.nickname || profileImageUrl !== profile.profileImageUrl);
 
   const updateProfileMutation = useMutation({
     mutationFn: async () =>
@@ -140,9 +140,7 @@ function MyProfileEditContent() {
             <CardTitle className="text-[clamp(1.75rem,5vw,2.25rem)] font-bold text-dark-brown">
               프로필 편집
             </CardTitle>
-            <p className="text-body3 text-grey-700">
-              사진과 닉네임을 수정할 수 있어요.
-            </p>
+            <p className="text-body3 text-grey-700">사진과 닉네임을 수정할 수 있어요.</p>
           </CardHeader>
 
           <CardContent className="space-y-8 p-6 pt-0 md:p-8 md:pt-0">
@@ -154,7 +152,10 @@ function MyProfileEditContent() {
               <>
                 <section className="flex flex-col items-center rounded-2xl bg-[#FFF8E1] px-5 py-8 text-center">
                   <Avatar className="size-28 ring-4 ring-white md:size-32">
-                    <AvatarImage src={profileImageUrl ?? '/images/avatar.png'} alt="profile preview" />
+                    <AvatarImage
+                      src={profileImageUrl ?? '/images/avatar.png'}
+                      alt="profile preview"
+                    />
                     <AvatarFallback className="bg-yellow-main text-xl font-bold text-black">
                       {getNicknameFallback(trimmedNickname || profile.nickname)}
                     </AvatarFallback>

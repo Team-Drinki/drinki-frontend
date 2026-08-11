@@ -1,9 +1,8 @@
 'use client';
 
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { hasVerifiedAge, saveAgeVerification } from '@/lib/age-verification';
-import { useAuthStatus } from '@/hooks/useAuthStatus';
+import { saveAgeVerification } from '@/lib/age-verification';
 
 function isValidAdultBirthDate(year: string, month: string, day: string): boolean {
   if (!/^\d{4}$/.test(year) || !/^\d{1,2}$/.test(month) || !/^\d{1,2}$/.test(day)) {
@@ -32,31 +31,10 @@ function isValidAdultBirthDate(year: string, month: string, day: string): boolea
 
 export default function AgeVerificationPage() {
   const router = useRouter();
-  const { isReady: isAuthReady, isAuthenticated } = useAuthStatus();
   const [year, setYear] = useState('');
   const [month, setMonth] = useState('');
   const [day, setDay] = useState('');
   const [error, setError] = useState('');
-  const [shouldShow, setShouldShow] = useState(false);
-
-  useEffect(() => {
-    if (!isAuthReady) {
-      return;
-    }
-
-    if (isAuthenticated) {
-      saveAgeVerification();
-      router.replace('/home');
-      return;
-    }
-
-    if (hasVerifiedAge()) {
-      router.replace('/home');
-      return;
-    }
-
-    setShouldShow(true);
-  }, [isAuthenticated, isAuthReady, router]);
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -69,10 +47,6 @@ export default function AgeVerificationPage() {
     saveAgeVerification();
     router.replace('/home');
   };
-
-  if (!shouldShow) {
-    return null;
-  }
 
   return (
     <main className="flex flex-1 items-center justify-center bg-grey-100 px-5 py-12 sm:px-8">

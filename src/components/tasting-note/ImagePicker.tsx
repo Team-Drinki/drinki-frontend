@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 type Props = {
   images: File[];
@@ -19,6 +19,13 @@ export default function ImagePicker({
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const imageCount = existingImages.length + images.length;
+  const previewUrls = useMemo(() => images.map(image => URL.createObjectURL(image)), [images]);
+
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach(previewUrl => URL.revokeObjectURL(previewUrl));
+    };
+  }, [previewUrls]);
 
   const openFile = () => inputRef.current?.click();
 
@@ -47,7 +54,12 @@ export default function ImagePicker({
             key={`existing-${i}`}
             className="relative h-40 w-[280px] flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white"
           >
-            <img src={src} alt={`existing-image-${i}`} className="h-full w-full object-cover" />
+            {/* eslint-disable-next-line @next/next/no-img-element -- URL host is provided by the API */}
+            <img
+              src={src}
+              alt={`기존 업로드 이미지 ${i + 1}`}
+              className="h-full w-full object-cover"
+            />
             <button
               type="button"
               onClick={() => removeExisting(i)}
@@ -60,14 +72,15 @@ export default function ImagePicker({
         ))}
 
         {/* 이미 추가된 썸네일들 */}
-        {images.map((f, i) => (
+        {images.map((file, i) => (
           <div
-            key={i}
+            key={`${file.name}-${file.lastModified}-${i}`}
             className="relative h-40 w-[280px] flex-shrink-0 overflow-hidden rounded-lg border border-gray-200 bg-white"
           >
+            {/* eslint-disable-next-line @next/next/no-img-element -- local Blob URL preview */}
             <img
-              src={URL.createObjectURL(f)}
-              alt={`image-${i}`}
+              src={previewUrls[i]}
+              alt={`${file.name} 미리보기`}
               className="h-full w-full object-cover"
             />
             <button

@@ -175,7 +175,9 @@ export default function CommunityEditPage() {
               />
             </div>
 
-            {errorMsg && <p className="mt-3 text-sm text-red-600 whitespace-pre-wrap">{errorMsg}</p>}
+            {errorMsg && (
+              <p className="mt-3 text-sm text-red-600 whitespace-pre-wrap">{errorMsg}</p>
+            )}
           </div>
 
           <div className="mb-6">

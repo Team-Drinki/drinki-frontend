@@ -38,7 +38,7 @@ export default function ProfileSidebarCard(props: Props) {
   const isOwnProfile = props.variant === 'me';
   const profile = props.profile;
   const socialType = props.variant === 'me' ? props.profile?.socialType : undefined;
-  const nickname = props.isLoading ? '불러오는 중...' : profile?.nickname ?? '닉네임';
+  const nickname = props.isLoading ? '불러오는 중...' : (profile?.nickname ?? '닉네임');
 
   return (
     <Card className="overflow-hidden rounded-[24px] border-none bg-white shadow-sm">
@@ -106,7 +106,9 @@ function ProfileCount({ label, value }: { label: string; value: number }) {
   return (
     <div className="space-y-4 text-center">
       <p className="text-[1.1rem] font-semibold text-black">{label}</p>
-      <p className="text-[2rem] font-bold leading-none text-black">{String(value).padStart(3, '0')}</p>
+      <p className="text-[2rem] font-bold leading-none text-black">
+        {String(value).padStart(3, '0')}
+      </p>
     </div>
   );
 }

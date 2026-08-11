@@ -68,7 +68,7 @@ export default function CommunityWritePage() {
       return;
     }
     if (!content.trim()) {
-      setToastMsg('내용을 입력해주세요.');  
+      setToastMsg('내용을 입력해주세요.');
       return;
     }
 
@@ -79,7 +79,7 @@ export default function CommunityWritePage() {
     const payload = {
       title: title.trim(),
       body: content,
-      category, 
+      category,
       // imageUrl: undefined,
     };
 

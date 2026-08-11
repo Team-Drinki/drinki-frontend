@@ -7,17 +7,18 @@ import { useQuery } from '@tanstack/react-query';
 import ProfileSidebarCard from '@/components/profile/ProfileSidebarCard';
 import DrinkCard from '@/components/common/DrinkCard';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  publicProfileQueryOptions,
-  userTastingNotesQueryOptions,
-} from '@/query/options/user';
+import { publicProfileQueryOptions, userTastingNotesQueryOptions } from '@/query/options/user';
 import { ChevronRight } from 'lucide-react';
 
 export default function PublicProfilePage() {
   const params = useParams<{ userId: string }>();
   const userId = Number(params.userId);
   const queryOptions = useMemo(() => publicProfileQueryOptions(userId), [userId]);
-  const { data: profile, isLoading, isError } = useQuery({
+  const {
+    data: profile,
+    isLoading,
+    isError,
+  } = useQuery({
     ...queryOptions,
     enabled: Number.isFinite(userId) && userId > 0,
   });
@@ -65,7 +66,9 @@ export default function PublicProfilePage() {
             </ProfileSection>
 
             <ProfileSection title="Community Post" moreHref="/community">
-              <p className="text-body3 text-grey-700">공개 프로필에서도 같은 오른쪽 레이아웃을 이어서 붙일 수 있게 구성해 두었어요.</p>
+              <p className="text-body3 text-grey-700">
+                공개 프로필에서도 같은 오른쪽 레이아웃을 이어서 붙일 수 있게 구성해 두었어요.
+              </p>
             </ProfileSection>
           </div>
         </div>
@@ -86,7 +89,9 @@ function ProfileSection({
   return (
     <Card className="overflow-hidden rounded-2xl border-none shadow-sm">
       <div className="flex items-center justify-between bg-yellow-main px-4 py-3 md:px-5">
-        <h2 className="text-[1.55rem] font-semibold leading-[1.2] text-black md:text-head6">{title}</h2>
+        <h2 className="text-[1.55rem] font-semibold leading-[1.2] text-black md:text-head6">
+          {title}
+        </h2>
         <Link
           href={moreHref}
           className="inline-flex items-center gap-1 text-[0.82rem] font-semibold text-black md:text-body3"

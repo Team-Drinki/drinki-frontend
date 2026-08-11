@@ -1,7 +1,7 @@
 'use client';
 
 import { useEditor, EditorContent } from '@tiptap/react';
-import { CellSelection, TableMap } from 'prosemirror-tables';
+import { TableMap } from 'prosemirror-tables';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
@@ -16,13 +16,9 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
-import { Node, mergeAttributes } from '@tiptap/core';
+import { Node, mergeAttributes, type Editor } from '@tiptap/core';
 import './tiptap.css';
 import {
-  Bold,
-  Italic,
-  Underline as UnderlineIcon,
-  Strikethrough,
   AlignLeft,
   AlignCenter,
   AlignRight,
@@ -33,17 +29,11 @@ import {
   Quote,
   Minus,
   FileText,
-  MapPin,
-  Calendar,
   BarChart3,
   Code,
-  SquareDot,
   Table,
   Video,
-  Smile,
   Cloud,
-  FolderPlus,
-  Search,
   Plus,
   X,
 } from 'lucide-react';
@@ -72,6 +62,107 @@ interface RichTextEditorProps {
   content: string;
   onChange: (content: string) => void;
   className?: string;
+}
+
+type CanTableState = {
+  addRowBefore: boolean;
+  addRowAfter: boolean;
+  deleteRow: boolean;
+  addColumnBefore: boolean;
+  addColumnAfter: boolean;
+  deleteColumn: boolean;
+  toggleHeaderRow: boolean;
+  toggleHeaderColumn: boolean;
+  toggleHeaderCell: boolean;
+  mergeCells: boolean;
+  splitCell: boolean;
+  deleteTable: boolean;
+};
+
+const INITIAL_CAN_TABLE: CanTableState = {
+  addRowBefore: false,
+  addRowAfter: false,
+  deleteRow: false,
+  addColumnBefore: false,
+  addColumnAfter: false,
+  deleteColumn: false,
+  toggleHeaderRow: false,
+  toggleHeaderColumn: false,
+  toggleHeaderCell: false,
+  mergeCells: false,
+  splitCell: false,
+  deleteTable: false,
+};
+
+function getTableNodeFromSelection(editor: Editor) {
+  const { $from } = editor.state.selection;
+
+  for (let depth = $from.depth; depth > 0; depth -= 1) {
+    const node = $from.node(depth);
+
+    if (node.type.name === 'table') {
+      return node;
+    }
+  }
+
+  return null;
+}
+
+function getHeaderStates(editor: Editor): { headerRow: boolean; headerCol: boolean } {
+  const tableNode = getTableNodeFromSelection(editor);
+
+  if (!tableNode) {
+    return { headerRow: false, headerCol: false };
+  }
+
+  const tableMap = TableMap.get(tableNode);
+
+  const isHeaderCell = (cellPosition: number): boolean => {
+    const cell = tableNode.nodeAt(cellPosition);
+    return cell?.type.name === 'tableHeader';
+  };
+
+  let headerRow = tableMap.width > 0;
+  for (let column = 0; column < tableMap.width; column += 1) {
+    if (!isHeaderCell(tableMap.map[column])) {
+      headerRow = false;
+      break;
+    }
+  }
+
+  let headerCol = tableMap.height > 0;
+  for (let row = 0; row < tableMap.height; row += 1) {
+    if (!isHeaderCell(tableMap.map[row * tableMap.width])) {
+      headerCol = false;
+      break;
+    }
+  }
+
+  return { headerRow, headerCol };
+}
+
+function computeCanTable(editor: Editor): CanTableState {
+  return {
+    addRowBefore: editor.can().chain().addRowBefore().run(),
+    addRowAfter: editor.can().chain().addRowAfter().run(),
+    deleteRow: editor.can().chain().deleteRow().run(),
+    addColumnBefore: editor.can().chain().addColumnBefore().run(),
+    addColumnAfter: editor.can().chain().addColumnAfter().run(),
+    deleteColumn: editor.can().chain().deleteColumn().run(),
+    toggleHeaderRow: editor.can().chain().toggleHeaderRow().run(),
+    toggleHeaderColumn: editor.can().chain().toggleHeaderColumn().run(),
+    toggleHeaderCell: editor.can().chain().toggleHeaderCell().run(),
+    mergeCells: editor.can().chain().mergeCells().run(),
+    splitCell: editor.can().chain().splitCell().run(),
+    deleteTable: editor.can().chain().deleteTable().run(),
+  };
+}
+
+function areTableStatesEqual(previousState: CanTableState, nextState: CanTableState): boolean {
+  return Object.keys(previousState).every(key => {
+    const stateKey = key as keyof CanTableState;
+    return previousState[stateKey] === nextState[stateKey];
+  });
 }
 
 export default function RichTextEditor({ content, onChange }: RichTextEditorProps) {
@@ -563,7 +654,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       ];
     },
     addNodeView() {
-      return ({ node, HTMLAttributes }) => {
+      return ({ node }) => {
         const dom = document.createElement('div');
         dom.setAttribute('data-type', 'bookmark');
         dom.className = 'bookmark-wrapper';
@@ -726,7 +817,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       }
 
       return false;
-    } catch (_) {
+    } catch {
       return false;
     }
   };
@@ -822,19 +913,8 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     ],
     content,
 
-    onCreate: ({ editor }) => {
-      (window as any).tiptap = editor;
-      try {
-        (window.top as any).tiptap = editor;
-      } catch {}
-      console.log(
-        'tiptap attached:',
-        editor.extensionManager.extensions.map(e => e.name)
-      );
-    },
-
     onUpdate: ({ editor }) => {
-      if (!editor || (editor as any).isDestroyed) return;
+      if (!editor || editor.isDestroyed) return;
 
       try {
         onChange(editor.getHTML());
@@ -1007,7 +1087,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
         // Space 키를 눌렀을 때도 URL인지 확인
         if (event.key === ' ') {
           setTimeout(() => {
-            if (!editor || (editor as any).isDestroyed) return;
+            if (!editor || editor.isDestroyed) return;
 
             const { state } = editor.view;
             const { $from } = state.selection;
@@ -1028,166 +1108,48 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     immediatelyRender: false,
   });
 
-  type CanTableState = {
-    addRowBefore: boolean;
-    addRowAfter: boolean;
-    deleteRow: boolean;
-    addColumnBefore: boolean;
-    addColumnAfter: boolean;
-    deleteColumn: boolean;
-    toggleHeaderRow: boolean;
-    toggleHeaderColumn: boolean;
-    toggleHeaderCell: boolean;
-    mergeCells: boolean;
-    splitCell: boolean;
-    deleteTable: boolean;
-  };
-
-  const initialCanTable: CanTableState = {
-    addRowBefore: false,
-    addRowAfter: false,
-    deleteRow: false,
-    addColumnBefore: false,
-    addColumnAfter: false,
-    deleteColumn: false,
-    toggleHeaderRow: false,
-    toggleHeaderColumn: false,
-    toggleHeaderCell: false,
-    mergeCells: false,
-    splitCell: false,
-    deleteTable: false,
-  };
-
   const [isTableActive, setIsTableActive] = useState(false);
-  const [canTable, setCanTable] = useState<CanTableState>(initialCanTable);
+  const [canTable, setCanTable] = useState<CanTableState>(INITIAL_CAN_TABLE);
 
   //행/열 테이블 상태 계산 함수
   const [isHeaderRowOn, setIsHeaderRowOn] = useState(false);
   const [isHeaderColOn, setIsHeaderColOn] = useState(false);
 
-  const getTableNodeFromSelection = (ed: any) => {
-    const { $from } = ed.state.selection;
-    for (let d = $from.depth; d > 0; d--) {
-      const node = $from.node(d);
-      // tiptap table node name = 'table'
-      if (node.type.name === 'table') return node;
-    }
-    return null;
-  };
-
-  const getHeaderStates = (ed: any) => {
-    const tableNode = getTableNodeFromSelection(ed);
-    if (!tableNode) return { headerRow: false, headerCol: false };
-
-    const map = TableMap.get(tableNode);
-    const isHeaderCell = (cellPos: number) => {
-      const cell = tableNode.nodeAt(cellPos);
-      return cell?.type?.name === 'tableHeader';
-    };
-
-    // 첫 번째 행(row=0)의 모든 칸이 tableHeader인지
-    let headerRow = map.width > 0;
-    for (let col = 0; col < map.width; col++) {
-      if (!isHeaderCell(map.map[col])) {
-        headerRow = false;
-        break;
-      }
-    }
-
-    // 첫 번째 열(col=0)의 모든 칸이 tableHeader인지
-    let headerCol = map.height > 0;
-    for (let row = 0; row < map.height; row++) {
-      const idx = row * map.width; // col=0
-      if (!isHeaderCell(map.map[idx])) {
-        headerCol = false;
-        break;
-      }
-    }
-
-    return { headerRow, headerCol };
-  };
-
-  const computeCanTable = (ed: any): CanTableState => {
-    return {
-      addRowBefore: ed.can().chain().addRowBefore().run(),
-      addRowAfter: ed.can().chain().addRowAfter().run(),
-      deleteRow: ed.can().chain().deleteRow().run(),
-
-      addColumnBefore: ed.can().chain().addColumnBefore().run(),
-      addColumnAfter: ed.can().chain().addColumnAfter().run(),
-      deleteColumn: ed.can().chain().deleteColumn().run(),
-
-      toggleHeaderRow: ed.can().chain().toggleHeaderRow().run(),
-      toggleHeaderColumn: ed.can().chain().toggleHeaderColumn().run(),
-      toggleHeaderCell: ed.can().chain().toggleHeaderCell().run(),
-
-      mergeCells: ed.can().chain().mergeCells().run(),
-      splitCell: ed.can().chain().splitCell().run(),
-
-      deleteTable: ed.can().chain().deleteTable().run(),
-    };
-  };
-
-  const shallowEqual = (a: CanTableState, b: CanTableState) => {
-    for (const k in a) {
-      const key = k as keyof CanTableState;
-      if (a[key] !== b[key]) return false;
-    }
-    return true;
-  };
-
   useEffect(() => {
-    if (!editor) return;
+    if (!editor) {
+      return;
+    }
 
-    const refresh = () => {
-      const active = editor.isActive('table');
-      setIsTableActive(active);
+    const refreshTableState = () => {
+      const tableIsActive = editor.isActive('table');
+      setIsTableActive(tableIsActive);
 
-      if (!active) {
-        setCanTable(prev => (shallowEqual(prev, initialCanTable) ? prev : initialCanTable));
+      if (!tableIsActive) {
+        setCanTable(previousState =>
+          areTableStatesEqual(previousState, INITIAL_CAN_TABLE) ? previousState : INITIAL_CAN_TABLE
+        );
         setIsHeaderRowOn(false);
         setIsHeaderColOn(false);
         return;
       }
 
-      const next = computeCanTable(editor);
-      setCanTable(prev => (shallowEqual(prev, next) ? prev : next));
+      const nextCanTable = computeCanTable(editor);
+      setCanTable(previousState =>
+        areTableStatesEqual(previousState, nextCanTable) ? previousState : nextCanTable
+      );
 
       const { headerRow, headerCol } = getHeaderStates(editor);
       setIsHeaderRowOn(headerRow);
       setIsHeaderColOn(headerCol);
     };
 
-    // 최초 1회
-    refresh();
-
-    // selection 움직일 때 / 문서 변경될 때 갱신
-    editor.on('selectionUpdate', refresh);
-    editor.on('transaction', refresh);
+    refreshTableState();
+    editor.on('selectionUpdate', refreshTableState);
+    editor.on('transaction', refreshTableState);
 
     return () => {
-      editor.off('selectionUpdate', refresh);
-      editor.off('transaction', refresh);
-    };
-  }, [editor]);
-
-  useEffect(() => {
-    if (!editor) return;
-
-    (window as any).tiptap = editor;
-    try {
-      (window.top as any).tiptap = editor;
-    } catch {}
-
-    updateDropdownValues();
-
-    return () => {
-      try {
-        delete (window as any).tiptap;
-      } catch {}
-      try {
-        delete (window.top as any).tiptap;
-      } catch {}
+      editor.off('selectionUpdate', refreshTableState);
+      editor.off('transaction', refreshTableState);
     };
   }, [editor]);
 
@@ -1525,12 +1487,15 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     editor
       .chain()
       .focus()
-      .setImage({
-        src: imageUrl,
-        alt: '이미지',
-        width: '800',
-        height: '400',
-      } as any)
+      .insertContent({
+        type: 'image',
+        attrs: {
+          src: imageUrl,
+          alt: '이미지',
+          width: '800',
+          height: '400',
+        },
+      })
       .run();
 
     // input 초기화 (같은 파일을 다시 선택할 수 있도록)
@@ -1686,7 +1651,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
     // 현재 이미지 속성 가져오기
     const currentAttrs = editor.getAttributes('image');
 
-    const attrs: any = {
+    const attrs = {
       ...currentAttrs,
     };
 
@@ -1704,7 +1669,7 @@ export default function RichTextEditor({ content, onChange }: RichTextEditorProp
       attrs.height = null;
     }
 
-    editor.chain().focus().setImage(attrs).run();
+    editor.chain().focus().updateAttributes('image', attrs).run();
   };
 
   const handleImageWidthChange = (e: React.ChangeEvent<HTMLInputElement>) => {

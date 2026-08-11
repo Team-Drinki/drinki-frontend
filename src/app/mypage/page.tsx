@@ -61,10 +61,7 @@ function MyPageContent() {
     isLoading: isCommentsLoading,
     isError: isCommentsError,
   } = useQuery(myCommentsQueryOptions);
-  const {
-    data: wishes,
-    isLoading: isWishLoading,
-  } = useQuery(wishAlcoholListQueryOptions(1, 9));
+  const { data: wishes, isLoading: isWishLoading } = useQuery(wishAlcoholListQueryOptions(1, 9));
 
   const tastingNoteItems: ActivityItem[] =
     myNotes?.items.map(item => ({
@@ -202,15 +199,15 @@ function MyPageContent() {
               {isWishLoading ? (
                 <p className="text-body3 text-grey-700">위시리스트를 불러오는 중...</p>
               ) : (
-                <ActivityGrid items={wishlistItems.length > 0 ? wishlistItems : fallbackWishlistItems} />
+                <ActivityGrid
+                  items={wishlistItems.length > 0 ? wishlistItems : fallbackWishlistItems}
+                />
               )}
             </DashboardSection>
 
             <DashboardSection title="Comments" moreHref="/community">
               {isCommentsLoading ? (
-                <p className="px-4 py-5 text-body3 text-grey-700 md:px-5">
-                  댓글을 불러오는 중...
-                </p>
+                <p className="px-4 py-5 text-body3 text-grey-700 md:px-5">댓글을 불러오는 중...</p>
               ) : isCommentsError ? (
                 <p className="px-4 py-5 text-body3 text-grey-700 md:px-5">
                   댓글을 불러오지 못했습니다.
@@ -242,7 +239,9 @@ function DashboardSection({
   return (
     <Card className="overflow-hidden rounded-2xl border-none py-0 shadow-sm">
       <div className="flex items-center justify-between bg-yellow-main px-4 py-3 md:px-5">
-        <h2 className="text-[1.55rem] font-semibold leading-[1.2] text-black md:text-head6">{title}</h2>
+        <h2 className="text-[1.55rem] font-semibold leading-[1.2] text-black md:text-head6">
+          {title}
+        </h2>
         <Link
           href={moreHref}
           className="inline-flex items-center gap-1 text-[0.82rem] font-semibold text-black md:text-body3"
@@ -299,7 +298,9 @@ function CommentList({ items }: { items: CommentItem[] }) {
       {items.map((item, index) => (
         <li
           key={item.id}
-          className={index === 0 ? 'px-4 py-5 md:px-5' : 'border-t border-brown/40 px-4 py-5 md:px-5'}
+          className={
+            index === 0 ? 'px-4 py-5 md:px-5' : 'border-t border-brown/40 px-4 py-5 md:px-5'
+          }
         >
           <Link href={item.href} className="block">
             <p className="text-body2 font-semibold leading-[1.35] text-black md:text-head6">
