@@ -1,13 +1,13 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { SquarePen } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import DrinkCard from '@/components/common/DrinkCard';
 import PostsPagination from '@/components/common/PostsPagination';
 import Searchbar from '@/components/common/Searchbar';
-import AuthGuard from '@/components/auth/AuthGuard';
 import CustomButton from '@/components/common/CustomButton';
 import { tastingNoteListQueryOptions } from '@/query/options/tasting-note';
 import {
@@ -22,11 +22,7 @@ const CATEGORY_BUTTONS: { label: string; value: TastingNoteBoardCategory }[] = [
 ];
 
 export default function TastingNotePage() {
-  return (
-    <AuthGuard>
-      <TastingNotePageContent />
-    </AuthGuard>
-  );
+  return <TastingNotePageContent />;
 }
 
 function TastingNotePageContent() {
@@ -59,11 +55,16 @@ function TastingNotePageContent() {
   return (
     <main className="flex-1 pb-20">
       <section className="px-5 pt-6 sm:px-8 sm:pt-8 md:px-10 md:pt-10">
-        <div className="mx-auto max-w-[1200px] rounded-[24px] bg-yellow-100 px-5 py-10 sm:px-8 sm:py-12 md:px-10 md:py-14">
-          <h1 className="text-[clamp(2.25rem,9vw,3rem)] font-bold text-black">Tasting Note</h1>
-          <p className="mt-3 text-body2 text-grey-800 sm:text-body1">
-            향과 맛을 잊기 전에 테이스팅 노트를 작성해보세요.
-          </p>
+        <div className="mx-auto max-w-[1200px] overflow-hidden rounded-[24px]">
+          <Image
+            src="/images/tasting-hero-banner.png"
+            alt="오늘의 한잔을 기록하세요. 술의 향과 분위기, 그리고 기억까지 남겨보세요."
+            width={4320}
+            height={1662}
+            priority
+            sizes="(max-width: 1280px) 100vw, 1200px"
+            className="h-[180px] w-full object-cover sm:h-[220px] md:h-[300px]"
+          />
         </div>
       </section>
 

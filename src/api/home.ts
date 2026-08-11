@@ -1,27 +1,25 @@
 import { z } from 'zod';
 import { getAlcoholList } from '@/api/alcohol';
+import { getHotTastingNotes } from '@/api/tasting-note';
 import type { HotCommunityPost, HotTastingNote } from '@/schema/api/home';
 import type { AlcoholListItem } from '@/schema/api/alcohol';
+import type { TastingNoteListItem } from '@/schema/api/tasting-note';
 import { sortByKeyWithSchema } from '@/utils/sort';
 
-function mapToHotTastingNotes(
-  items: AlcoholListItem[]
-): HotTastingNote[] {
+function mapToHotTastingNotes(items: TastingNoteListItem[]): HotTastingNote[] {
   return items.map(item => ({
     id: item.id,
-    title: item.name,
-    author: item.category,
-    imageUrl: item.image ?? '/images/whisky.png',
+    title: item.title,
+    author: item.writer,
+    imageUrl: item.imageUrl ?? '/images/whisky.png',
     avatarUrl: '/images/avatar.png',
-    likes: item.wish,
-    views: item.viewCnt,
-    comments: item.noteCnt,
+    likes: item.likeCount,
+    views: item.viewCount,
+    comments: item.commentCount,
   }));
 }
 
-function mapToHotCommunityPosts(
-  items: AlcoholListItem[]
-): HotCommunityPost[] {
+function mapToHotCommunityPosts(items: AlcoholListItem[]): HotCommunityPost[] {
   return items.map(item => ({
     id: item.id,
     title: item.name,
@@ -36,26 +34,33 @@ export interface HomeHotContent {
 const alcoholHomeSortKeySchema = z.enum(['viewCnt', 'noteCnt', 'wish', 'rating']);
 
 export async function getHomeHotContent(): Promise<HomeHotContent> {
-  const alcoholList = await getAlcoholList({
-    page: 1,
-    size: 100,
-    sort: 'CreatedAt',
-  });
+  const [hotTastingNotesResult, alcoholListResult] = await Promise.allSettled([
+    getHotTastingNotes(),
+    getAlcoholList({
+      page: 1,
+      size: 100,
+      sort: 'CreatedAt',
+    }),
+  ]);
 
-  const top10ByTastingNotes = sortByKeyWithSchema(alcoholList.items, alcoholHomeSortKeySchema, {
-    key: 'noteCnt',
-    order: 'desc',
-    limit: 10,
-  });
+  const hotTastingNotes =
+    hotTastingNotesResult.status === 'fulfilled'
+      ? mapToHotTastingNotes(hotTastingNotesResult.value)
+      : null;
 
-  const top10ByRating = sortByKeyWithSchema(alcoholList.items, alcoholHomeSortKeySchema, {
-    key: 'rating',
-    order: 'desc',
-    limit: 10,
-  });
+  const hotCommunityPosts =
+    alcoholListResult.status === 'fulfilled'
+      ? mapToHotCommunityPosts(
+          sortByKeyWithSchema(alcoholListResult.value.items, alcoholHomeSortKeySchema, {
+            key: 'rating',
+            order: 'desc',
+            limit: 10,
+          })
+        )
+      : null;
 
   return {
-    hotTastingNotes: mapToHotTastingNotes(top10ByTastingNotes),
-    hotCommunityPosts: mapToHotCommunityPosts(top10ByRating),
+    hotTastingNotes,
+    hotCommunityPosts,
   };
 }

@@ -197,7 +197,7 @@ export default function AppearanceBar({
                     role="radio"
                     onClick={() => {
                       setShadeIdx(i);
-                      onChange && onChange(binOfIndex(i));
+                      onChange?.(binOfIndex(i));
                     }}
                     className="flex-1 h-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-black/20 
                               transition-[transform,box-shadow] duration-250 ease-[cubic-bezier(0.2,0.8,0.2,1)] will-change-transform"

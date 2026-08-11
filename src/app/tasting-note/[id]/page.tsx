@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -143,7 +144,11 @@ export default function TastingNoteDetailPage() {
   const noteId = Number(params?.id);
   const queryClient = useQueryClient();
 
-  const { data: currentUserId } = useQuery(authQueryOptions);
+  const {
+    data: currentUserId,
+    isFetching: isAuthFetching,
+    isSuccess: isAuthSuccess,
+  } = useQuery(authQueryOptions);
   const { data, isLoading, isError } = useQuery(tastingNoteDetailQueryOptions(noteId));
   const [savedMeta, setSavedMeta] = useState<TastingNoteMeta | null>(null);
 
@@ -166,7 +171,11 @@ export default function TastingNoteDetailPage() {
     staleTime: 5 * 60 * 1000,
     retry: false,
   });
-  const isOwner = currentUserId === data?.writerId;
+  const isOwner =
+    isAuthSuccess &&
+    !isAuthFetching &&
+    currentUserId !== null &&
+    Number(currentUserId) === Number(data?.writerId);
 
   const aromaItems = useMemo(() => (data ? flattenRatingMapToTiles(data.aromaNote) : []), [data]);
   const palateItems = useMemo(() => (data ? flattenRatingMapToTiles(data.palateNote) : []), [data]);
@@ -269,13 +278,19 @@ export default function TastingNoteDetailPage() {
               </h1>
 
               <div className="flex flex-col gap-3 text-sm sm:flex-row sm:items-center sm:justify-between">
-                <div className="flex items-center gap-2.5">
+                <Link
+                  href={`/profile/${data.writerId}`}
+                  className="flex items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-main"
+                  aria-label={`${data.writerName}님의 프로필 보기`}
+                >
                   <Avatar className="h-9 w-9 border border-[#eadfce]">
                     <AvatarImage src={data.writerImage ?? undefined} />
                     <AvatarFallback>{data.writerName.slice(0, 1)}</AvatarFallback>
                   </Avatar>
-                  <span className="text-xl font-semibold text-[#241a13]">{data.writerName}</span>
-                </div>
+                  <span className="text-xl font-semibold text-[#241a13] transition-colors hover:text-[#9a5a00]">
+                    {data.writerName}
+                  </span>
+                </Link>
 
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[#241a13]">
                   <div className="flex items-center gap-2">

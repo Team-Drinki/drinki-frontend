@@ -16,16 +16,31 @@ export default function AuthGuard({
   loadingFallback = null,
 }: AuthGuardProps) {
   const router = useRouter();
-  const { isReady, isAuthenticated } = useAuthStatus();
+  const { isReady, isAuthenticated, isError, refetch } = useAuthStatus();
 
   useEffect(() => {
-    if (isReady && !isAuthenticated) {
+    if (isReady && !isError && !isAuthenticated) {
       router.replace(redirectTo);
     }
-  }, [isReady, isAuthenticated, redirectTo, router]);
+  }, [isReady, isAuthenticated, isError, redirectTo, router]);
 
   if (!isReady) {
     return <>{loadingFallback}</>;
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+        <p className="text-sm text-muted-foreground">로그인 상태를 확인하지 못했어요.</p>
+        <button
+          type="button"
+          className="rounded-md bg-brown-700 px-4 py-2 text-sm font-semibold text-white"
+          onClick={() => void refetch()}
+        >
+          다시 시도
+        </button>
+      </div>
+    );
   }
 
   if (!isAuthenticated) {

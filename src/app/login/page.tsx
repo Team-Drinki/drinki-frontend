@@ -1,7 +1,9 @@
+'use client';
+
 import GoogleLogo from '@/components/svg/GoogleLogo';
 
 export default function LoginPage() {
-  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
   const googleLoginUrl = `${apiBaseUrl}/api/v1/auth/login/google`;
 
   return (

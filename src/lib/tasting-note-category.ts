@@ -1,10 +1,6 @@
 export type TastingNoteBoardCategory = '위스키' | '와인' | '기타';
 
-export const TASTING_NOTE_BOARD_CATEGORIES: TastingNoteBoardCategory[] = [
-  '위스키',
-  '와인',
-  '기타',
-];
+export const TASTING_NOTE_BOARD_CATEGORIES: TastingNoteBoardCategory[] = ['위스키', '와인', '기타'];
 
 const DIRECT_CATEGORY_NAMES = new Set<TastingNoteBoardCategory>(['위스키', '와인']);
 

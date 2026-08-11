@@ -2,14 +2,10 @@ import axios from 'axios';
 import { currentUserIdSchema } from '@/schema/api/auth';
 import { apiInstance } from './instance';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, '') ?? '';
 
 function isAnonymousStatus(status: number): boolean {
   return status === 401 || status === 403;
-}
-
-function isRedirectStatus(status: number): boolean {
-  return status >= 300 && status < 400;
 }
 
 export const loginWithGoogle = (): void => {
@@ -26,21 +22,17 @@ export const getCurrentUser = async (): Promise<number | null> => {
     return currentUserIdSchema.parse(raw);
   } catch (error) {
     if (axios.isAxiosError(error)) {
-      const status = error.response?.status ?? 0;
-      if (isAnonymousStatus(status) || isRedirectStatus(status)) {
+      const status = error.response?.status;
+
+      // A missing response means the browser could not reach the API (for example,
+      // a temporary outage or local CORS configuration). Authentication is optional
+      // on public pages, so keep the app usable as an anonymous visitor.
+      if (!error.response || (status != null && isAnonymousStatus(status))) {
         return null;
       }
     }
 
-    // Browser CORS/OAuth redirects can throw network-level errors before HTTP status is available.
-    if (
-      error instanceof Error &&
-      (error.message.includes('CORS') || error.message.includes('accounts.google.com'))
-    ) {
-      return null;
-    }
-
-    return null;
+    throw error;
   }
 };
 

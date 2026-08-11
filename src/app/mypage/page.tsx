@@ -13,7 +13,11 @@ import ProfileSidebarCard from '@/components/profile/ProfileSidebarCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { myProfileQueryOptions } from '@/query/options/user';
+import {
+  myCommentsQueryOptions,
+  myProfileQueryOptions,
+  myTastingNotesQueryOptions,
+} from '@/query/options/user';
 import { ChevronRight, Eye, Heart, MessageSquare } from 'lucide-react';
 
 type ActivityItem = {
@@ -31,6 +35,7 @@ type CommentItem = {
   id: number;
   postTitle: string;
   comment: string;
+  href: string;
 };
 
 export default function MyPage() {
@@ -47,32 +52,28 @@ function MyPageContent() {
   useQuery(authQueryOptions);
   const { data: profile, isLoading: isProfileLoading } = useQuery(myProfileQueryOptions);
   const {
-    data: wishes,
-    isLoading: isWishLoading,
-  } = useQuery(wishAlcoholListQueryOptions(1, 9));
+    data: myNotes,
+    isLoading: isNotesLoading,
+    isError: isNotesError,
+  } = useQuery(myTastingNotesQueryOptions(profile?.nickname));
+  const {
+    data: myComments,
+    isLoading: isCommentsLoading,
+    isError: isCommentsError,
+  } = useQuery(myCommentsQueryOptions);
+  const { data: wishes, isLoading: isWishLoading } = useQuery(wishAlcoholListQueryOptions(1, 9));
 
-  const tastingNoteItems: ActivityItem[] = [
-    {
-      id: 1,
-      title: '발렌타인 30년 블렌디드 스카치 위스키',
-      author: '닉네임',
-      imageUrl: '/images/whisky.png',
-      likes: 459,
-      views: 2025,
-      comments: 72,
-      href: '/tasting-note/1',
-    },
-    {
-      id: 2,
-      title: '맥캘란 18년 첫 시음 기록',
-      author: '닉네임',
-      imageUrl: '/images/whisky.png',
-      likes: 317,
-      views: 1284,
-      comments: 48,
-      href: '/tasting-note/2',
-    },
-  ];
+  const tastingNoteItems: ActivityItem[] =
+    myNotes?.items.map(item => ({
+      id: item.id,
+      title: item.title,
+      author: item.author,
+      imageUrl: item.imageUrl ?? '/images/whisky.png',
+      likes: item.likes,
+      views: item.views,
+      comments: item.comments,
+      href: `/tasting-note/${item.id}`,
+    })) ?? [];
 
   const communityItems: ActivityItem[] = [
     {
@@ -132,23 +133,18 @@ function MyPageContent() {
     },
   ];
 
-  const commentItems: CommentItem[] = [
-    {
-      id: 1,
-      postTitle: '입문자를 위한 위스키 추천 5선',
-      comment: ' 저는 글렌리벳 12년도 정말 추천해요.',
-    },
-    {
-      id: 2,
-      postTitle: '요즘 빠진 조합: 아벨라워 + 다크초콜릿',
-      comment: ' 이 조합 진짜 공감입니다. 피트향에도 잘 어울려요.',
-    },
-    {
-      id: 3,
-      postTitle: '테이스팅노트 어떻게 쓰고 계신가요?',
-      comment: ' 향/맛/피니시를 나눠서 쓰니 훨씬 정리되더라고요.',
-    },
-  ];
+  const commentItems: CommentItem[] =
+    myComments?.items.map(item => ({
+      id: item.id,
+      postTitle: item.targetTitle,
+      comment: item.body,
+      href:
+        item.targetType === 'post'
+          ? `/community/${item.targetId}`
+          : item.targetType === 'tasting_note'
+            ? `/tasting-note/${item.targetId}`
+            : `/alcohol/${item.targetId}`,
+    })) ?? [];
 
   const handleLogout = async () => {
     await logout();
@@ -184,7 +180,15 @@ function MyPageContent() {
 
           <div className="space-y-4 md:space-y-5">
             <DashboardSection title="Tasting Note" moreHref="/tasting-note">
-              <ActivityGrid items={tastingNoteItems} />
+              {isProfileLoading || isNotesLoading ? (
+                <p className="text-body3 text-grey-700">테이스팅 노트를 불러오는 중...</p>
+              ) : isNotesError ? (
+                <p className="text-body3 text-grey-700">테이스팅 노트를 불러오지 못했습니다.</p>
+              ) : tastingNoteItems.length > 0 ? (
+                <ActivityGrid items={tastingNoteItems} />
+              ) : (
+                <p className="text-body3 text-grey-700">작성한 테이스팅 노트가 없습니다.</p>
+              )}
             </DashboardSection>
 
             <DashboardSection title="Community Post" moreHref="/community">
@@ -195,12 +199,26 @@ function MyPageContent() {
               {isWishLoading ? (
                 <p className="text-body3 text-grey-700">위시리스트를 불러오는 중...</p>
               ) : (
-                <ActivityGrid items={wishlistItems.length > 0 ? wishlistItems : fallbackWishlistItems} />
+                <ActivityGrid
+                  items={wishlistItems.length > 0 ? wishlistItems : fallbackWishlistItems}
+                />
               )}
             </DashboardSection>
 
             <DashboardSection title="Comments" moreHref="/community">
-              <CommentList items={commentItems} />
+              {isCommentsLoading ? (
+                <p className="px-4 py-5 text-body3 text-grey-700 md:px-5">댓글을 불러오는 중...</p>
+              ) : isCommentsError ? (
+                <p className="px-4 py-5 text-body3 text-grey-700 md:px-5">
+                  댓글을 불러오지 못했습니다.
+                </p>
+              ) : commentItems.length > 0 ? (
+                <CommentList items={commentItems} />
+              ) : (
+                <p className="px-4 py-5 text-body3 text-grey-700 md:px-5">
+                  작성한 댓글이 없습니다.
+                </p>
+              )}
             </DashboardSection>
           </div>
         </div>
@@ -221,7 +239,9 @@ function DashboardSection({
   return (
     <Card className="overflow-hidden rounded-2xl border-none py-0 shadow-sm">
       <div className="flex items-center justify-between bg-yellow-main px-4 py-3 md:px-5">
-        <h2 className="text-[1.55rem] font-semibold leading-[1.2] text-black md:text-head6">{title}</h2>
+        <h2 className="text-[1.55rem] font-semibold leading-[1.2] text-black md:text-head6">
+          {title}
+        </h2>
         <Link
           href={moreHref}
           className="inline-flex items-center gap-1 text-[0.82rem] font-semibold text-black md:text-body3"
@@ -278,14 +298,18 @@ function CommentList({ items }: { items: CommentItem[] }) {
       {items.map((item, index) => (
         <li
           key={item.id}
-          className={index === 0 ? 'px-4 py-5 md:px-5' : 'border-t border-brown/40 px-4 py-5 md:px-5'}
+          className={
+            index === 0 ? 'px-4 py-5 md:px-5' : 'border-t border-brown/40 px-4 py-5 md:px-5'
+          }
         >
-          <p className="text-body2 font-semibold leading-[1.35] text-black md:text-head6">
-            {item.postTitle}
-          </p>
-          <p className="mt-3 whitespace-pre-line text-body3 leading-[1.6] text-grey-800">
-            └ {item.comment}
-          </p>
+          <Link href={item.href} className="block">
+            <p className="text-body2 font-semibold leading-[1.35] text-black md:text-head6">
+              {item.postTitle}
+            </p>
+            <p className="mt-3 whitespace-pre-line text-body3 leading-[1.6] text-grey-800">
+              └ {item.comment}
+            </p>
+          </Link>
         </li>
       ))}
     </ul>
